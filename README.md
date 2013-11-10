@@ -9,7 +9,7 @@ some games. There is also no vsync, so the emulator tends to run way too fast.
 To launch a game, use the command line. This is a barebones Gameboy emultator,
 remember?
 
-> gbemu.exe <path-to-the-rom> <path-to-the-optional-boot-rom>
+> gbemu.exe *path-to-the-rom* *path-to-the-optional-boot-rom*
 
 You don't need a boot rom to use the emulator, but if you have one, the emulator
 will run it so you can see the scrolling Nintendo logo. :)
