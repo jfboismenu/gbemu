@@ -7,6 +7,7 @@
 #include "videoDisplay.h"
 #include "bootRom.h"
 #include "papu.h"
+#include "timers.h"
 
 namespace gbemu {
 
@@ -28,15 +29,7 @@ namespace gbemu {
         );
     private:
 
-        void emulateTimers( int nbCycles );
         void handleInterrupts();
-
-        static const int kCPUSpeed = 4194304;
-        static const int kDividerFrequency = 16384;
-        static const int kClockPerDividerCycle = kCPUSpeed / kDividerFrequency;
-
-        int _cyclesToIncDivider;
-        int _cyclesToIncTimerCounter;
 
         BootRom _bootRom;
         PAPU   _papu;
@@ -46,6 +39,7 @@ namespace gbemu {
         DebugStringHandlerRegistry _debugReg;
         CPU _cpu;
         VideoDisplay _video;
+        Timers _timers;
         int _clock;
     };
 }

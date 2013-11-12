@@ -68,7 +68,28 @@ bool Counter::hasOverflowed() const
 }
 
 PAPU::PAPU( const int& clock ) : _clock( clock ), _squareWaveChannel( clock )
-{}
+{
+/*
+    mr(kNR10) = 0x80;
+    mr(kNR11) = 0xBF;
+    mr(kNR12) = 0xF3;
+    mr(kNR14) = 0xBF;
+    mr(kNR21) = 0x3F;
+    mr(kNR22) = 0x00;
+    mr(kNR24) = 0xBF;
+    mr(kNR30) = 0x7F;
+    mr(kNR31) = 0xFF;
+    mr(kNR32) = 0x9F;
+    mr(kNR33) = 0xBF;
+    mr(kNR41) = 0xFF;
+    mr(kNR42) = 0x00;
+    mr(kNR43) = 0x00;
+    mr(kNR30) = 0xBF;
+    mr(kNR50) = 0x77;
+    mr(kNR51) = 0xF3;
+    mr(kNR52) = 0xF1;
+*/
+}
 
 void PAPU::registerSoundReadyCb( SoundReadyCb cb, void* clientData )
 {

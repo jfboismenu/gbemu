@@ -4,6 +4,7 @@
 #include "bootRom.h"
 #include "papu.h"
 #include "videoDisplay.h"
+#include "timers.h"
 #include <memory>
 
 namespace gbemu {
@@ -43,37 +44,18 @@ namespace gbemu {
     Memory::Memory(
         const BootRom& bootRom,
         VideoDisplay&  videoDisplay,
+        Timers&        timers,
         PAPU&          papu
     ) : _keyState( 0 ),
         _bootRom( bootRom ),
         _videoDisplay( videoDisplay ),
         _isBooting( bootRom.isInitialized() ),
-        _papu( papu )
+        _papu( papu ),
+        _timers( timers )
     {
         memset( _bytes, 0, sizeof( _bytes ) );
         _bytes[ kP1 ] = 0xff;
         if (!hasBootRom()) {
-            memoryRegister(kTIMA) = 0x0;
-            memoryRegister(kTMA) = 0;
-            memoryRegister(kTAC) = 0;
-            memoryRegister(kNR10) = 0x80;
-            memoryRegister(kNR11) = 0xBF;
-            memoryRegister(kNR12) = 0xF3;
-            memoryRegister(kNR14) = 0xBF;
-            memoryRegister(kNR21) = 0x3F;
-            memoryRegister(kNR22) = 0x00;
-            memoryRegister(kNR24) = 0xBF;
-            memoryRegister(kNR30) = 0x7F;
-            memoryRegister(kNR31) = 0xFF;
-            memoryRegister(kNR32) = 0x9F;
-            memoryRegister(kNR33) = 0xBF;
-            memoryRegister(kNR41) = 0xFF;
-            memoryRegister(kNR42) = 0x00;
-            memoryRegister(kNR43) = 0x00;
-            memoryRegister(kNR30) = 0xBF;
-            memoryRegister(kNR50) = 0x77;
-            memoryRegister(kNR51) = 0xF3;
-            memoryRegister(kNR52) = 0xF1;
             memoryRegister(kIE) = 0x00;
         }
     }
@@ -104,8 +86,11 @@ namespace gbemu {
         if ( isInternalRAMEcho( addr ) ) {
             return _bytes[addr - 0x2000];
         }
-        if (VideoDisplay::isVideoMemory(addr)) {
-            return _videoDisplay.readByte(addr);
+        if ( VideoDisplay::isVideoMemory( addr ) ) {
+            return _videoDisplay.readByte( addr );
+        }
+        if ( _timers.contains( addr ) ) {
+            return _timers.readByte( addr );
         }
         return _bytes[ addr ];
     }
@@ -136,7 +121,10 @@ namespace gbemu {
             _bytes[addr] = value;
         }
         else if (VideoDisplay::isVideoMemory(addr)) {
-            _videoDisplay.writeByte(addr, value);
+            _videoDisplay.writeByte( addr, value );
+        }
+        else if ( _timers.contains( addr ) ) {
+            _timers.writeByte( addr, value );
         }
         else if ( isBetween( addr, 0xff00, 0xff80 ) ) {
             if ( addr == kP1 ) {
@@ -165,19 +153,7 @@ P13-------O-Down-----O-Start ---- bit 3
             else if ( addr == kSC ) {
                 _bytes[ addr ] = value;
             }
-            else if ( addr == kDIV ) {
-                _bytes[ addr ] = 0;
-            }
             else if ( addr == kIF ) {
-                _bytes[ addr ] = value;
-            }
-            else if ( addr == kTIMA ) {
-                _bytes[ addr ] = value;
-            }
-            else if ( addr == kTMA ) {
-                _bytes[ addr ] = value;
-            }
-            else if ( addr == kTAC ) {
                 _bytes[ addr ] = value;
             }
             else if ( kSoundRegistersStart < addr && addr < kSoundRegistersEnd ) {

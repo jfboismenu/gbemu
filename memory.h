@@ -9,6 +9,7 @@ namespace gbemu {
     class BootRom;
     class PAPU;
     class VideoDisplay;
+    class Timers;
 
     class Memory : public WordIOProtocol< Memory >
     {
@@ -32,7 +33,8 @@ namespace gbemu {
         Memory(
             const BootRom& rom,
             VideoDisplay&  videoDisplay,
-            PAPU& papu
+            Timers&        timers,
+            PAPU&          papu
         );
 
         void setKeyState( unsigned char state );
@@ -55,5 +57,6 @@ namespace gbemu {
         VideoDisplay&                  _videoDisplay;
         mutable bool                   _isBooting;
         PAPU&                          _papu;
+        Timers&                        _timers;
     };
 }
