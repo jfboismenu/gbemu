@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include "common.h"
 
 namespace gbemu {
 
@@ -34,13 +35,19 @@ namespace gbemu {
         unsigned char components[3];
     };
 
-    class VideoDisplay
+    class VideoDisplay : public WordIOProtocol< VideoDisplay >
     {
     public:
-        VideoDisplay( Memory& memory );
+        static bool isVideoRAM(unsigned short addr);
+        static bool isOAM(unsigned short addr);
+        static bool isVideoMemory(unsigned short addr);
+
+        VideoDisplay( Memory& memory, bool isInitialized );
         void emulate( int nbCycles );
         bool isFrameReady() const;
         const Color* getPixels() const;
+        virtual void writeByte(unsigned short addr, unsigned char byte);
+        virtual unsigned char readByte(unsigned short addr) const;
     private:
         void drawTiles(
             const int                     scx,
@@ -73,6 +80,21 @@ namespace gbemu {
         Memory& _memory;
         int _lcdCycle;
         mutable bool _isFrameReady;
+
+        unsigned char _lcdc;
+        unsigned char _scx;
+        unsigned char _scy;
+        unsigned char _stat;
+        unsigned char _lyc;
+        unsigned char _ly;
+        unsigned char _oamRegion[ 0XFEA0 - 0xFE00 ];
+        unsigned char _dmaRegister;
+        unsigned char _bgp;
+        unsigned char _obp0;
+        unsigned char _obp1;
+        unsigned char _wx;
+        unsigned char _wy;
+        unsigned char _videoRam[ 0xA000 - 0x8000 ];
 
         Color _pixels[ 144 ][ 160 ];
     };

@@ -6,12 +6,40 @@
 namespace gbemu {
 
     VideoDisplay::VideoDisplay( 
-        Memory& memory 
+        Memory& memory,
+        bool isInitialized
     ) : _memory( memory ),
         _lcdCycle( 0 ),
-        _isFrameReady( false )
+        _isFrameReady( false ),
+        _scx( 0 ),
+        _scy( 0 )
     {
         memset( _pixels, 0, sizeof( _pixels ) );
+        if (isInitialized) {
+            _lcdc = 0x91;
+            _scy = 0x00;
+            _scx = 0x00;
+            _lyc = 0x00;
+            _bgp = 0xFC;
+            _obp0 = 0xFF;
+            _obp1 = 0xFF;
+            _wx = 0x00;
+            _wy = 0x00;
+        }
+    }
+
+    bool VideoDisplay::isVideoRAM(unsigned short addr)
+    {
+        return isBetween(addr, 0x8000, 0xA000);
+    }
+    bool VideoDisplay::isOAM(unsigned short addr)
+    {
+        return isBetween(addr, 0xFE00, 0xFEA0);
+    }
+
+    bool VideoDisplay::isVideoMemory(unsigned short addr)
+    {
+        return isVideoRAM( addr ) || isOAM( addr ) || isBetween( addr, kLCDC, kWX + 1 );
     }
 
     Color shades[ 4 ] = { Color( 252,  232,  160 ),
@@ -90,12 +118,11 @@ namespace gbemu {
     {
         JFX_CMP_ASSERT( y, >=, 0 );
         JFX_CMP_ASSERT( y, <, 144 );
-        const unsigned char lcdc = _memory.memoryRegister( kLCDC  );
-        bool isTile8x16 = getBit( lcdc, 2 );
+        bool isTile8x16 = getBit( _lcdc, 2 );
 
-        const bool dataSelect = ( lcdc & ( 1 << 4 ) ) != 0;
-        const bool bgMapDataSelect = ( lcdc & ( 1 << 3 ) ) != 0;
-        const bool windowMapDataSelect = ( lcdc & ( 1 << 6 ) ) != 0;
+        const bool dataSelect = ( _lcdc & ( 1 << 4 ) ) != 0;
+        const bool bgMapDataSelect = ( _lcdc & ( 1 << 3 ) ) != 0;
+        const bool windowMapDataSelect = ( _lcdc & ( 1 << 6 ) ) != 0;
 
         // Address of tile index 0.
         const std::array< unsigned short, 2 > kTileTableStart{ { 0x9000, 0x8000 } };
@@ -105,15 +132,15 @@ namespace gbemu {
         std::array< Color, 4 > bgPalette;
         std::array< Color, 4 > sprite0Palette;
         std::array< Color, 4 > sprite1Palette;
-        decodePalette( bgPalette, _memory.memoryRegister( kBGP ) );
-        decodePalette( sprite0Palette, _memory.memoryRegister( kOBP0 ) );
-        decodePalette( sprite1Palette, _memory.memoryRegister( kOBP1 ) );
+        decodePalette( bgPalette, _bgp );
+        decodePalette( sprite0Palette, _obp0 );
+        decodePalette(sprite1Palette, _obp1);
         
         drawTiles(
            scx, scy, y, kTileMapStart[ bgMapDataSelect ], dataSelect,
            kTileTableStart[ dataSelect ], bgPalette, 0, 0
         );
-        if ( getBit( lcdc, 5 ) ) {
+        if ( getBit( _lcdc, 5 ) ) {
             if ( wy <= 143 && wx <= 166 && wy <= y ) {
                 drawTiles(
                     0, 0, y, kTileMapStart[ windowMapDataSelect ], dataSelect,
@@ -121,7 +148,7 @@ namespace gbemu {
             }
         }
         
-        if ( getBit( lcdc, 1 ) ) {
+        if ( getBit( _lcdc, 1 ) ) {
             unsigned short addr = 0xfe00;
             while( addr < 0xfea0 ) {
                 int spriteY = _memory.readByte( addr++ );
@@ -205,11 +232,11 @@ namespace gbemu {
     void VideoDisplay::emulate( int nbCycles )
     {
         _lcdCycle += nbCycles;
-        unsigned char stat( _memory.memoryRegister( kSTAT ) );
+        unsigned char stat( _stat );
         unsigned char mode( ( stat & 0x03 ) );
         int ly;
         // If display is off, no need to update the lcd values
-        if ( ( _memory.memoryRegister( kLCDC ) & kLCDEnabledBit ) == 0 ) {
+        if ( ( _lcdc & kLCDEnabledBit ) == 0 ) {
             _lcdCycle = 0;
             mode = 0;
             ly = 0;
@@ -228,12 +255,12 @@ namespace gbemu {
                 // We are in mode 0
                 if ( modeCycle < kMode2Start ) {
                     if ( mode != 0 ) {
-                        if(  getBit( _memory.memoryRegister( kSTAT ), 3 ) ) {
+                        if(  getBit( _stat, 3 ) ) {
                             setLCDCInterruptFlag();
                         }
-                        if ( _memory.memoryRegister( kLYC ) == ly ) {
+                        if ( _lyc == ly ) {
                             setBit( stat, 2 );
-                            if ( getBit( _memory.memoryRegister( kSTAT ), 6 ) ) {
+                            if ( getBit( _stat, 6 ) ) {
                                 setLCDCInterruptFlag();
                             }
                         }
@@ -244,7 +271,7 @@ namespace gbemu {
                     mode = 0;
                 }
                 else if ( modeCycle < kMode3Start ) {
-                    if ( mode != 2 && getBit( _memory.memoryRegister( kSTAT ), 5 ) ) {
+                    if ( mode != 2 && getBit( _stat, 5 ) ) {
                         setLCDCInterruptFlag();
                     }
                     mode = 2;
@@ -254,10 +281,10 @@ namespace gbemu {
                     if ( mode != 3 ) {
                         mode = 3;
                         computeLine( ly,
-                            _memory.memoryRegister( kSCX ),
-                            _memory.memoryRegister( kSCY ),
-                            _memory.memoryRegister( kWX ),
-                            _memory.memoryRegister( kWY ) );
+                            _scx,
+                            _scy,
+                            _wx,
+                            _wy );
                     }
                 }
                 else {
@@ -270,7 +297,7 @@ namespace gbemu {
                     _isFrameReady = true;
                     // set vblank interrupt flag
                     _memory.memoryRegister( kIF ) |= Memory::kIFVBlankFlag;
-                    if ( mode != 2 && getBit( _memory.memoryRegister( kSTAT ), 4 ) ) {
+                    if ( mode != 2 && getBit( _stat, 4 ) ) {
                         setLCDCInterruptFlag();
                     }
                 }
@@ -279,9 +306,9 @@ namespace gbemu {
         }
 
         stat = ( stat & 0xfc ) | mode | 0x80;
-        _memory.memoryRegister( kLY ) = static_cast< unsigned char >( ly );
+        _ly = static_cast< unsigned char >( ly );
         JFX_CMP_ASSERT( ly, <, 154 );
-        _memory.memoryRegister( kSTAT ) = stat;
+        _stat = stat;
     }
 
     void VideoDisplay::setLCDCInterruptFlag()
@@ -301,5 +328,113 @@ namespace gbemu {
     const Color* VideoDisplay::getPixels() const
     {
         return &( _pixels[ 0 ][ 0 ] );
+    }
+
+    void VideoDisplay::writeByte(unsigned short addr, unsigned char value) {
+        if (addr == kLCDC) {
+            _lcdc = value;
+        }
+        else if (addr == kSCX) {
+            _scx = value;
+        }
+        else if (addr == kSCY) {
+            _scy = value;
+        }
+        else if (addr == kSTAT) {
+            static const unsigned char writableBytesMask = GetMask(0, 1, 1, 1, 1, 1, 0, 0);
+            // writable bytes are 2, 3, 4 and 5 and 7 is always set
+            _stat = (_stat & (~writableBytesMask)) | (value & writableBytesMask) | 0x80;
+        }
+        else if (addr == kLYC) {
+            _lyc = value;
+        }
+        else if (addr == kLY) {
+            _ly = value;
+        }
+        else if (addr == kDMA) {
+            for (unsigned short i = 0; i < (0xFEA0 - 0xFE00); ++i) {
+                _oamRegion[i] = _memory.readByte((value * 256) + i);
+            }
+            _dmaRegister = value;
+        }
+        else if (isOAM(addr)) {
+            _oamRegion[addr - 0xFE00] = value;
+        }
+        else if (addr == kBGP) {
+            _bgp = value;
+        }
+        else if (addr == kOBP0) {
+            _obp0 = value;
+        }
+        else if (addr == kOBP1) {
+            _obp1 = value;
+        }
+        else if (addr == kWX) {
+            _wx = value;
+        }
+        else if (addr == kWY) {
+            _wy = value;
+        }
+        else if (isVideoRAM(addr)) {
+            // Can't write to this region of memory during mode 3    
+            if (getBit(_lcdc, 7) && (_stat & 0x03) == 0x03) {
+                //JFX_MSG_ASSERT( "Trying to write at RAM when not allowed to" );
+                _videoRam[addr - 0x8000] = value;
+            }
+            else {
+                _videoRam[addr - 0x8000] = value;
+            }
+        }
+        else {
+            JFX_MSG_ASSERT("Unknown video memory address: " << addr);
+        }
+    }
+
+    unsigned char VideoDisplay::readByte(unsigned short addr) const {
+        if (addr == kLCDC) {
+            return _lcdc;
+        }
+        else if (addr == kSCX) {
+            return _scx;
+        }
+        else if (addr == kSCY) {
+            return _scy;
+        }
+        else if (addr == kSTAT) {
+            return _stat;
+        }
+        else if (addr == kLYC) {
+            return _lyc;
+        }
+        else if (addr == kLY) {
+            return _ly;
+        }
+        else if (addr == kDMA) {
+            return _dmaRegister;
+        }
+        else if (isOAM(addr)) {
+            return _oamRegion[addr - 0xFE00];
+        }
+        else if (addr == kBGP) {
+            return _bgp;
+        }
+        else if (addr == kOBP0) {
+            return _obp0;
+        }
+        else if (addr == kOBP1) {
+            return _obp1;
+        }
+        else if (addr == kWX) {
+            return _wx;
+        }
+        else if (addr == kWY) {
+            return _wy;
+        }
+        else if (isVideoRAM(addr)) {
+            return _videoRam[addr - 0x8000];
+        } 
+        else {
+            JFX_MSG_ASSERT( "Unknown video memory address: " << addr);
+        }
     }
 }

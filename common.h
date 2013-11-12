@@ -178,4 +178,14 @@ namespace gbemu {
             t->writeByte( addr + 1, ( value & 0xFF00 ) >> 8 );
         }
     };
+
+    JFX_INLINE bool isBetween(
+        unsigned short tested,
+        unsigned short lower,
+        unsigned short upper
+        )
+    {
+        return lower <= tested && tested < upper;
+    }
+
 }

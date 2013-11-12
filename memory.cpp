@@ -3,18 +3,8 @@
 #include "mbc.h"
 #include "bootRom.h"
 #include "papu.h"
+#include "videoDisplay.h"
 #include <memory>
-
-namespace {
-    bool isBetween(
-        unsigned short tested,
-        unsigned short lower,
-        unsigned short upper
-    )
-    {
-        return lower <= tested && tested < upper;
-    }
-}
 
 namespace gbemu {
     bool Memory::isROMBank0( unsigned short addr )
@@ -25,10 +15,7 @@ namespace gbemu {
     {
         return isBetween( addr, getSwitchableROMBankStart(), 0x8000 );
     }
-    bool Memory::isVideoRAM( unsigned short addr )
-    {
-        return isBetween( addr, 0x8000, 0xA000 );
-    }
+
     bool Memory::isSwitchableRAMBank( unsigned short addr )
     {
         return isBetween( addr, 0xA000, 0xC000 );
@@ -41,10 +28,7 @@ namespace gbemu {
     {
         return isBetween( addr, 0xE000, 0xFE00 );
     }
-    bool Memory::isOAM( unsigned short addr )
-    {
-        return isBetween( addr, 0xFE00, 0xFEA0 );
-    }
+
     bool Memory::isMemoryMapped( unsigned short addr )
     {
         return isROMBank0( addr ) ||
@@ -58,9 +42,11 @@ namespace gbemu {
     
     Memory::Memory(
         const BootRom& bootRom,
-        PAPU& papu
+        VideoDisplay&  videoDisplay,
+        PAPU&          papu
     ) : _keyState( 0 ),
         _bootRom( bootRom ),
+        _videoDisplay( videoDisplay ),
         _isBooting( bootRom.isInitialized() ),
         _papu( papu )
     {
@@ -88,16 +74,7 @@ namespace gbemu {
             memoryRegister(kNR50) = 0x77;
             memoryRegister(kNR51) = 0xF3;
             memoryRegister(kNR52) = 0xF1;
-            memoryRegister(kLCDC) = 0x91;
-            memoryRegister(kSCY)  = 0x00;
-            memoryRegister(kSCX)  = 0x00;
-            memoryRegister(kLYC)  = 0x00;
-            memoryRegister(kBGP)  = 0xFC;
-            memoryRegister(kOBP0) = 0xFF;
-            memoryRegister(kOBP1) = 0xFF;
-            memoryRegister(kWX)   = 0x00;
-            memoryRegister(kWY)   = 0x00;
-            memoryRegister(kIE)   = 0x00;
+            memoryRegister(kIE) = 0x00;
         }
     }
 
@@ -127,32 +104,8 @@ namespace gbemu {
         if ( isInternalRAMEcho( addr ) ) {
             return _bytes[addr - 0x2000];
         }
-        if ( addr == kP1 ) {
-            noop();
-        }
-        else if ( addr == kSB ) {
-            noop();
-        }
-        else if ( addr == kSC ) {
-            noop();
-        }
-        else if ( addr == kDIV ) {
-            noop();
-        }
-        else if ( addr == kTIMA ) {
-            noop();
-        }
-        else if ( addr == kTMA ) {
-            noop();
-        }
-        else if ( addr == kTAC ) {
-            noop();
-        }
-        else if ( addr == kLCDC ) {
-            noop();
-        }
-        else if ( addr == kSTAT ) {
-            noop();
+        if (VideoDisplay::isVideoMemory(addr)) {
+            return _videoDisplay.readByte(addr);
         }
         return _bytes[ addr ];
     }
@@ -173,37 +126,19 @@ namespace gbemu {
         if ( isMemoryMapped( addr ) ) {
             _cartridge->getMBC().writeByte( addr, value );
         }
-        else if ( isVideoRAM( addr ) ) {
-            // Can't write to this region of memory during mode 3
-            if ( getBit( _bytes[ kLCDC ], 7 ) && ( _bytes[kSTAT] & 0x03 ) == 0x03 ) {
-                //JFX_MSG_ASSERT( "Trying to write at RAM when not allowed to" );
-				_bytes[ addr ] = value;
-            }
-            else {
-                 if ( addr >= 0x8000 && addr < 0x9800 && value != 0 ) {
-                    noop();
-                 }
-                _bytes[ addr ] = value;
-            }
-        }
         else if ( isInternalRAM( addr ) ) {
             _bytes[addr] = value;
         }
         else if ( isInternalRAMEcho( addr ) ) {
             _bytes[addr - 0x2000] = value;
         }
-        else if (addr < 0xfea0) {
-            // Can't write to this region of memory during mode 2
-            if ( getBit( _bytes[ kLCDC ], 7 ) && ( _bytes[kSTAT] & 0x02 ) == 0x02 ) {
-                JFX_MSG_ASSERT( "Illegal write to OAM" );
-            } else {
-                _bytes[addr] = value;
-            }
-        } 
-        else if (addr < 0xff00) {
+        else if ( isBetween( addr, 0xFEA0, 0xff00 ) ) {
             _bytes[addr] = value;
         }
-        else if ( addr < 0xff80 ) {
+        else if (VideoDisplay::isVideoMemory(addr)) {
+            _videoDisplay.writeByte(addr, value);
+        }
+        else if ( isBetween( addr, 0xff00, 0xff80 ) ) {
             if ( addr == kP1 ) {
 /*
   bit 4 - P14        P15 - bit - 5
@@ -243,26 +178,6 @@ P13-------O-Down-----O-Start ---- bit 3
                 _bytes[ addr ] = value;
             }
             else if ( addr == kTAC ) {
-                _bytes[ addr ] = value;
-            }
-            else if ( addr == kSTAT ) {
-                static const unsigned char writableBytesMask = GetMask( 0, 1, 1, 1, 1, 1, 0, 0 );
-                // writable bytes are 2, 3, 4 and 5 and 7 is always set
-                _bytes[ addr ] = ( _bytes[ addr ] & (~writableBytesMask) ) | ( value & writableBytesMask ) | 0x80;
-            }
-            else if ( addr == kDMA ) {
-                for ( unsigned short i = 0; i < ( 0xFEA0 - 0xFE00 ); ++i ) {
-                    _bytes[ 0xFE00 + i ] = readByte( ( value * 256 ) + i );
-                }
-                _bytes[ addr ] = value;
-            }
-            else if ( addr == kLCDC ) {
-                _bytes[ addr ] = value;
-            }
-            else if ( addr == kLYC ) {
-                _bytes[ addr ] = value;
-            }
-            else if ( addr == kSCX ) {
                 _bytes[ addr ] = value;
             }
             else if ( kSoundRegistersStart < addr && addr < kSoundRegistersEnd ) {

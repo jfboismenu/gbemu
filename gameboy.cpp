@@ -46,9 +46,9 @@ namespace gbemu
     }
 
     Gameboy::Gameboy(const char* const bootRom) :
-        _memory( _bootRom, _papu ),
+        _memory( _bootRom, _video, _papu ),
         _cpu( _memory, _cartridge ),
-        _video( _memory ),
+        _video( _memory, !_bootRom.isInitialized() ),
         _cyclesToIncTimerCounter( 0 ),
         _cyclesToIncDivider( 0 ),
         _papu( _clock ),

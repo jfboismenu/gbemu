@@ -8,6 +8,7 @@ namespace gbemu {
     class Cartridge;
     class BootRom;
     class PAPU;
+    class VideoDisplay;
 
     class Memory : public WordIOProtocol< Memory >
     {
@@ -30,6 +31,7 @@ namespace gbemu {
 
         Memory(
             const BootRom& rom,
+            VideoDisplay&  videoDisplay,
             PAPU& papu
         );
 
@@ -50,6 +52,7 @@ namespace gbemu {
         Cartridge*                     _cartridge;
         unsigned char                  _keyState;
         const BootRom&                 _bootRom;
+        VideoDisplay&                  _videoDisplay;
         mutable bool                   _isBooting;
         PAPU&                          _papu;
     };
