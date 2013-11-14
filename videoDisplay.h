@@ -49,6 +49,8 @@ namespace gbemu {
         virtual void writeByte(unsigned short addr, unsigned char byte);
         virtual unsigned char readByte(unsigned short addr) const;
     private:
+
+        Color& getPixel(int x, int y);
         void drawTiles(
             const int                     scx,
             const int                     scy,

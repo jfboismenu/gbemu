@@ -5,7 +5,7 @@
 
 namespace gbemu {
 
-    VideoDisplay::VideoDisplay( 
+    VideoDisplay::VideoDisplay(
         Memory& memory,
         bool isInitialized
     ) : _memory( memory ),
@@ -96,12 +96,6 @@ namespace gbemu {
             const unsigned short tileAddr = (unsigned short)(tileTableStart + ( tileIndex * 16 ));
             // Get the pointer to the bytes of that tile
             const unsigned short tileLineBytes( _memory.readWord( tileAddr + tileLine * 2 ) );
-            
-            // Make sure we are drawing on screen.
-            JFX_CMP_ASSERT( y, >=, 0 );
-            JFX_CMP_ASSERT( y, <, 144 );
-            JFX_CMP_ASSERT( x, >=, 0 );
-            JFX_CMP_ASSERT( x, <, 160 );
 
             // The last tile that wants to be drawn has to be clipped to the border of the screen, hence the
             // std::min.
@@ -111,9 +105,19 @@ namespace gbemu {
                   getBit( ( tileLineBytes & 0xFF ), 7 - ( backgroundPixel % 8 ) ) +
                   ( getBit( ( tileLineBytes & 0xFF00 ) >> 8, 7 - ( backgroundPixel % 8 ) ) << 1 ) );
 
-               _pixels[ y ][ x ] = bgPalette[ colorIndex ];
+               getPixel(x, y) = bgPalette[ colorIndex ];
             }
         }
+    }
+
+    Color& VideoDisplay::getPixel( int x, int y ) {
+        // Make sure we are accessing a real pixel.
+        JFX_CMP_ASSERT( y, >=, 0 );
+        JFX_CMP_ASSERT( y, <, 144 );
+        JFX_CMP_ASSERT( x, >=, 0 );
+        JFX_CMP_ASSERT( x, <, 160 );
+
+        return _pixels[ y ][ x ];
     }
 
     void VideoDisplay::computeLine( int y, int scx, int scy, unsigned char wx, unsigned char wy )
@@ -137,7 +141,7 @@ namespace gbemu {
         decodePalette( bgPalette, _bgp );
         decodePalette( sprite0Palette, _obp0 );
         decodePalette(sprite1Palette, _obp1);
-        
+
         drawTiles(
            scx, scy, y, kTileMapStart[ bgMapDataSelect ], dataSelect,
            kTileTableStart[ dataSelect ], bgPalette, 0, 0
@@ -149,7 +153,7 @@ namespace gbemu {
                     kTileTableStart[ dataSelect ], bgPalette, (unsigned char)std::max( 0, wx - 7 ), wy );
             }
         }
-        
+
         if ( getBit( _lcdc, 1 ) ) {
             unsigned short addr = 0xfe00;
             while( addr < 0xfea0 ) {
@@ -157,13 +161,13 @@ namespace gbemu {
                 int spriteX = _memory.readByte( addr++ );
                 const unsigned char spriteIndex = _memory.readByte( addr++ );
                 const unsigned char spriteAttr = _memory.readByte( addr++ );
-            
+
                 if ( spriteX == 0 || spriteY == 0 ||
-                    spriteX >= 168 || spriteY >= 160 ) 
+                    spriteX >= 168 || spriteY >= 160 )
                 {
                     // sprite hidden, continue
-                    continue;    
-                }  
+                    continue;
+                }
 
                 spriteY -= 16;
                 spriteX -= 8;
@@ -210,6 +214,11 @@ namespace gbemu {
                         const size_t colorIndex = (size_t)(getBit( spriteLineBytes & 0xFF, bitPos ) +
                             ( getBit( ( ( spriteLineBytes & 0xFF00 ) >> 8 ), bitPos ) << 1 ));
 
+                        JFX_CMP_ASSERT( y, >=, 0 );
+                        JFX_CMP_ASSERT( y, <, 144 );
+                        JFX_CMP_ASSERT( i + spriteX, >=, 0 );
+                        JFX_CMP_ASSERT( i + spriteX, <, 160 );
+
                         // if object over background
                         if ( !getBit( spriteAttr, 7 ) ) {
                             if ( colorIndex == 0 ) {
@@ -217,12 +226,12 @@ namespace gbemu {
                             }
                         }
                         else {
-                            if ( _pixels[ y ][ spriteX + i ] != bgPalette[ 0 ] ) {
+                            if ( getPixel( spriteX + i, y ) != bgPalette[ 0 ] ) {
                                 continue;
                             }
                         }
-                        
-                        _pixels[ y ][ spriteX + i ] = getBit( spriteAttr, 4 ) ? sprite1Palette[ colorIndex ] : sprite0Palette[ colorIndex ];
+
+                        getPixel( spriteX + i, y ) = getBit( spriteAttr, 4 ) ? sprite1Palette[ colorIndex ] : sprite0Palette[ colorIndex ];
                     }
                 }
 
@@ -250,7 +259,7 @@ namespace gbemu {
             }
 
             ly = _lcdCycle / k023ModeCycleLength;
-            
+
             // If we are not in VBlank, go through modes one after the otherr
             if ( _lcdCycle < kVBlankStart ) {
                 const int modeCycle( _lcdCycle % k023ModeCycleLength );
@@ -378,7 +387,7 @@ namespace gbemu {
             _wy = value;
         }
         else if (isVideoRAM(addr)) {
-            // Can't write to this region of memory during mode 3    
+            // Can't write to this region of memory during mode 3
             if (getBit(_lcdc, 7) && (_stat & 0x03) == 0x03) {
                 //JFX_MSG_ASSERT( "Trying to write at RAM when not allowed to" );
                 _videoRam[addr - 0x8000] = value;
@@ -434,7 +443,7 @@ namespace gbemu {
         }
         else if (isVideoRAM(addr)) {
             return _videoRam[addr - 0x8000];
-        } 
+        }
         else {
             JFX_MSG_ASSERT( "Unknown video memory address: " << addr);
         }

@@ -156,7 +156,7 @@ namespace gbemu {
     }
 
     template< typename T >
-    JFX_INLINE bool between( T lower, T higher, T value )
+    JFX_INLINE bool between( const T lower, const T higher, const T value )
     {
         JFX_CMP_ASSERT( lower, <=, higher );
         return lower <= value && value < higher;
