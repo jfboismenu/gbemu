@@ -4,17 +4,15 @@
 
 namespace gbemu {
 
-    Timers::Timers( Memory& memory, bool isInitialized ) : 
+    Timers::Timers( Memory& memory ) :
         _cyclesToIncTimerCounter( 0 ),
         _cyclesToIncDivider( 0 ),
-        _memory( memory )
-    {
-        if (isInitialized) {
-            _tima = 0x0;
-            _tma = 0;   
-            _tac = 0;
-        }
-    }
+        _memory( memory ),
+        _tima(0),
+        _tma(0),
+        _tac(0),
+        _div(0)
+    {}
 
     bool Timers::contains( unsigned short addr ) const
     {

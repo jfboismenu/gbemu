@@ -96,14 +96,16 @@ namespace gbemu {
             const unsigned short tileAddr = (unsigned short)(tileTableStart + ( tileIndex * 16 ));
             // Get the pointer to the bytes of that tile
             const unsigned short tileLineBytes( _memory.readWord( tileAddr + tileLine * 2 ) );
-
+            
             // Make sure we are drawing on screen.
             JFX_CMP_ASSERT( y, >=, 0 );
             JFX_CMP_ASSERT( y, <, 144 );
             JFX_CMP_ASSERT( x, >=, 0 );
             JFX_CMP_ASSERT( x, <, 160 );
-            
-            const int pixelsToDraw = 8 - ( backgroundPixel % 8 );
+
+            // The last tile that wants to be drawn has to be clipped to the border of the screen, hence the
+            // std::min.
+            const int pixelsToDraw = std::min(8 - ( backgroundPixel % 8 ), 160 - x);
             for ( int i = 0; i < pixelsToDraw; ++x, ++i, ++backgroundPixel ) {
                unsigned char colorIndex = static_cast< unsigned char >(
                   getBit( ( tileLineBytes & 0xFF ), 7 - ( backgroundPixel % 8 ) ) +

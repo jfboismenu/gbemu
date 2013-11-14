@@ -1,7 +1,7 @@
 #include "gameboy.h"
 
 namespace gbemu
-{   
+{
     Memory& Gameboy::getMemory()
     {
         return _memory;
@@ -51,9 +51,9 @@ namespace gbemu
         _papu( _clock ),
         _clock( 0 ),
         _bootRom( bootRom ),
-        _timers( _memory, _bootRom.isInitialized() )
+        _timers( _memory )
     {}
-    
+
     Gameboy::~Gameboy()
     {
     }

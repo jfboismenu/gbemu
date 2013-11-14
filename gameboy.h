@@ -38,8 +38,8 @@ namespace gbemu {
         Cartridge _cartridge;
         DebugStringHandlerRegistry _debugReg;
         CPU _cpu;
-        VideoDisplay _video;
         Timers _timers;
         int _clock;
+        VideoDisplay _video;
     };
 }

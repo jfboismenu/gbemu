@@ -84,7 +84,7 @@ namespace gbemu {
     int CPU::previewInstructionTiming() const
     {
         const Opcode opcode = previewOpcode();
-        if ( opcode > 256 ) {
+        if ( opcode >= 256 ) {
             return _opTimeCb[ opcode & 0xFF ];
         }
         else {

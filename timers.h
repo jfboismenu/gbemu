@@ -7,10 +7,7 @@ namespace gbemu {
     class Timers
     {
     public:
-        Timers( 
-            Memory& memory,
-            bool    isInitialized
-        );
+        Timers( Memory& memory );
 
         bool contains( unsigned short addr ) const;
         unsigned char readByte( unsigned short addr ) const;
