@@ -97,6 +97,11 @@ namespace gbemu {
                         JFX_MSG_ASSERT( "Wave pattern duty invalid: " << wavePatternDuty );
                 }
             }
+            float getSoundLength()
+            {
+                return (64 - soundLength) * (1.f / 256);
+            }
+        private:
             unsigned char soundLength : 6;
             unsigned char wavePatternDuty : 2;
         };
@@ -106,14 +111,14 @@ namespace gbemu {
         public:
             unsigned char getSoundLength()
             {
-                return soundLength;
+                return SoundLengthWavePatternDutyBits::getSoundLength();
             }
         };
         
         class EnveloppeBits
         {
         public:
-            bool isAmplify() const
+            bool isAmplifying() const
             {
                 return _direction == 1;
             }
@@ -130,9 +135,9 @@ namespace gbemu {
             {
                 return initialVolume;
             }
-            bool isAmplify() const
+            bool isAmplifying() const
             {
-                return EnveloppeBits::isAmplify();
+                return EnveloppeBits::isAmplifying();
             }
         };
         class MainVolumeOutputControlBits

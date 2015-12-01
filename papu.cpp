@@ -120,27 +120,27 @@ void PAPU::writeByte(
     }
     if ( addr == kNR52 ) {
         _nr52.write( value );
-//        std::cout << "All Sound Flag: " << ( _nr52.bits._allSoundOn ? "on" : "off" ) << std::endl;
+        std::cout << "All Sound Flag: " << ( _nr52.bits._allSoundOn ? "on" : "off" ) << std::endl;
     }
     else if ( addr == 0xFF24 ) {
         _nr50.write( value );
-//        std::cout << "-----NR50-ff24-----" << std::endl;
-//        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToLeftTerminal == 1 ) << std::endl;
-//        std::cout << "left Main output level (volume)  :" << (int)_nr50.bits.leftMainOutputLevel << std::endl;
-//        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToRightTerminal == 1 ) << std::endl;
-//        std::cout << "right Main output level (volume) :" << (int)( _nr50.bits.leftMainOutputLevel ) << std::endl;
+        std::cout << "-----NR50-ff24-----" << std::endl;
+        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToLeftTerminal == 1 ) << std::endl;
+        std::cout << "left Main output level (volume)  :" << (int)_nr50.bits.leftMainOutputLevel << std::endl;
+        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToRightTerminal == 1 ) << std::endl;
+        std::cout << "right Main output level (volume) :" << (int)( _nr50.bits.leftMainOutputLevel ) << std::endl;
     }
     else if ( addr == 0xFF25 ) {
         _nr51.write( value );
-//        std::cout << "-----NR51-ff25-----" << std::endl;
-//        std::cout << "Channel 1 to right : " << ( _nr51.bits.channel1Right == 1 ) << std::endl;
-//        std::cout << "Channel 2 to right : " << ( _nr51.bits.channel2Right == 1 ) << std::endl;
-//        std::cout << "Channel 3 to right : " << ( _nr51.bits.channel3Right == 1 ) << std::endl;
-//        std::cout << "Channel 4 to right : " << ( _nr51.bits.channel4Right == 1 ) << std::endl;
-//        std::cout << "Channel 1 to left  : " << ( _nr51.bits.channel1Left == 1 ) << std::endl;
-//        std::cout << "Channel 2 to left  : " << ( _nr51.bits.channel2Left == 1 ) << std::endl;
-//        std::cout << "Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ) << std::endl;
-//        std::cout << "Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ) << std::endl;
+        std::cout << "-----NR51-ff25-----" << std::endl;
+        std::cout << "Channel 1 to right : " << ( _nr51.bits.channel1Right == 1 ) << std::endl;
+        std::cout << "Channel 2 to right : " << ( _nr51.bits.channel2Right == 1 ) << std::endl;
+        std::cout << "Channel 3 to right : " << ( _nr51.bits.channel3Right == 1 ) << std::endl;
+        std::cout << "Channel 4 to right : " << ( _nr51.bits.channel4Right == 1 ) << std::endl;
+        std::cout << "Channel 1 to left  : " << ( _nr51.bits.channel1Left == 1 ) << std::endl;
+        std::cout << "Channel 2 to left  : " << ( _nr51.bits.channel2Left == 1 ) << std::endl;
+        std::cout << "Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ) << std::endl;
+        std::cout << "Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ) << std::endl;
     }
     else if ( addr == kNR11 || addr == kNR12 || addr == kNR13 || addr == kNR14 ) {
         _squareWaveChannel.writeByte( addr, value );
@@ -198,9 +198,9 @@ void PAPU::SquareWaveChannel::emulate( const int nbCycles )
         if ( _timeBeforeNextPhase == 0 ) {
             _phase = ( _phase + 1 ) * 8;
         }
-        else if ( _phase < dutyCycle[ _nr11.bits.wavePatternDuty ] ) {
-            _channel.writeSample( _clock + i, -10000 );
-        }
+        // else if ( _phase < dutyCycle[ _nr11.bits.wavePatternDuty ] ) {
+        //     _channel.writeSample( _clock + i, -10000 );
+        // }
         else {
             _channel.writeSample( _clock + i, 10000 );
         }
@@ -222,33 +222,33 @@ void PAPU::SquareWaveChannel::writeByte(
 {
     if ( addr == kNR11 ) {
         _nr11.write( value );
-//        std::cout << "-----NR11-ff11-----" << std::endl;
-//        std::cout << "Wave pattern duty            : " << _nr11.bits.getWaveDutyPercentage() << std::endl;
-//        std::cout << "Length counter load register : " << (int)_nr11.bits.soundLength << std::endl;
+        std::cout << "-----NR11-ff11-----" << std::endl;
+        std::cout << "Wave pattern duty            : " << _nr11.bits.getWaveDutyPercentage() << std::endl;
+        std::cout << "Length counter load register : " << (int)_nr11.bits.getSoundLength() << std::endl;
     }
     else if ( addr == kNR12 ) {
         _nr12.write( value );
-//        std::cout << "-----NR12-ff12-----" << std::endl;
-//        std::cout << "Initial channel volume       : " << (int)_nr12.bits.initialVolume << std::endl;
-//        std::cout << "Volume sweep direction       : " << ( _nr12.bits.isAmplify() ? "up" : "down" ) << std::endl;
-//        std::cout << "Length of each step          : " << (int)_nr12.bits.sweepLength << std::endl;
+        std::cout << "-----NR12-ff12-----" << std::endl;
+        std::cout << "Initial channel volume       : " << (int)_nr12.bits.initialVolume << std::endl;
+        std::cout << "Volume sweep direction       : " << ( _nr12.bits.isAmplifying() ? "up" : "down" ) << std::endl;
+        std::cout << "Length of each step          : " << (int)_nr12.bits.sweepLength << std::endl;
     }
     else if ( addr == kNR13 ) {
         _nr13.write( value );
-//        std::cout << "-----NR13-ff13-----" << std::endl;
-//        std::cout << "Frequency lo: " << (int)_nr13.bits._freqLo << std::endl;
+        std::cout << "-----NR13-ff13-----" << std::endl;
+        std::cout << "Frequency lo: " << (int)_nr13.bits._freqLo << std::endl;
     }
     else if ( addr == kNR14 ) {
         _nr14.write( value );
-//        std::cout << "-----NR14-ff14-----" << std::endl;
-//        std::cout << "Frequency hi : " << (int)_nr14.bits._freqHi << std::endl;
-//        std::cout << "Consecutive  : " << ( _nr14.bits._consecutive == 0 ? "loop" : "play until NR21-length expires" ) << std::endl;
-//        std::cout << "Initialize?  : " << ( _nr14.bits._initialize == 1 ) << std::endl;
-//        std::cout << "Period       : " << _periodOneEight << std::endl;
+        std::cout << "-----NR14-ff14-----" << std::endl;
+        std::cout << "Frequency hi : " << (int)_nr14.bits._freqHi << std::endl;
+        std::cout << "Consecutive  : " << ( _nr14.bits._consecutive == 0 ? "loop" : "play until NR21-length expires" ) << std::endl;
+        std::cout << "Initialize?  : " << ( _nr14.bits._initialize == 1 ) << std::endl;
+        std::cout << "Period       : " << _periodOneEight << std::endl;
 
         if ( _nr14.bits._initialize ) {
             _timeBeforeNextPhase = _periodOneEight = _nr13.bits._freqLo | ( _nr14.bits._freqHi << 8 );
-            _soundLength = ( 64 - _nr11.bits.soundLength ) * 4 * 1024 * 1024 / 256;
+            _soundLength = ( 64 - _nr11.bits.getSoundLength() ) * 4 * 1024 * 1024 / 256;
             _phase = 0;
         }
     }
