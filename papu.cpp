@@ -1,10 +1,10 @@
 #include "papu.h"
 #include "registers.h"
 #include "common.h"
+#include "logger.h"
 #include <iostream>
 
 namespace gbemu {
-
 
 SoundChannel::SoundChannel() : _samples( ( 4 * 1024 * 1024 / 32 ) / 16, 0 ), _accumulator( 0 )
 {
@@ -120,33 +120,33 @@ void PAPU::writeByte(
     }
     if ( addr == kNR52 ) {
         _nr52.write( value );
-        std::cout << "All Sound Flag: " << ( _nr52.bits._allSoundOn ? "on" : "off" ) << std::endl;
+        // JFX_LOG("All Sound Flag: " << ( _nr52.bits._allSoundOn ? "on" : "off" ));
     }
     else if ( addr == 0xFF24 ) {
         _nr50.write( value );
-        std::cout << "-----NR50-ff24-----" << std::endl;
-        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToLeftTerminal == 1 ) << std::endl;
-        std::cout << "left Main output level (volume)  :" << (int)_nr50.bits.leftMainOutputLevel << std::endl;
-        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToRightTerminal == 1 ) << std::endl;
-        std::cout << "right Main output level (volume) :" << (int)( _nr50.bits.leftMainOutputLevel ) << std::endl;
+        // JFX_LOG("-----NR50-ff24-----");
+        // JFX_LOG("Output Vin to left               :" << ( _nr50.bits.outputVinToLeftTerminal == 1 ));
+        // JFX_LOG("left Main output level (volume)  :" << (int)_nr50.bits.leftMainOutputLevel);
+        // JFX_LOG("Output Vin to left               :" << ( _nr50.bits.outputVinToRightTerminal == 1 ));
+        // JFX_LOG("right Main output level (volume) :" << (int)( _nr50.bits.leftMainOutputLevel ));
     }
     else if ( addr == 0xFF25 ) {
         _nr51.write( value );
-        std::cout << "-----NR51-ff25-----" << std::endl;
-        std::cout << "Channel 1 to right : " << ( _nr51.bits.channel1Right == 1 ) << std::endl;
-        std::cout << "Channel 2 to right : " << ( _nr51.bits.channel2Right == 1 ) << std::endl;
-        std::cout << "Channel 3 to right : " << ( _nr51.bits.channel3Right == 1 ) << std::endl;
-        std::cout << "Channel 4 to right : " << ( _nr51.bits.channel4Right == 1 ) << std::endl;
-        std::cout << "Channel 1 to left  : " << ( _nr51.bits.channel1Left == 1 ) << std::endl;
-        std::cout << "Channel 2 to left  : " << ( _nr51.bits.channel2Left == 1 ) << std::endl;
-        std::cout << "Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ) << std::endl;
-        std::cout << "Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ) << std::endl;
+        // JFX_LOG("-----NR51-ff25-----");
+        // JFX_LOG("Channel 1 to right : " << ( _nr51.bits.channel1Right == 1 ));
+        // JFX_LOG("Channel 2 to right : " << ( _nr51.bits.channel2Right == 1 ));
+        // JFX_LOG("Channel 3 to right : " << ( _nr51.bits.channel3Right == 1 ));
+        // JFX_LOG("Channel 4 to right : " << ( _nr51.bits.channel4Right == 1 ));
+        // JFX_LOG("Channel 1 to left  : " << ( _nr51.bits.channel1Left == 1 ));
+        // JFX_LOG("Channel 2 to left  : " << ( _nr51.bits.channel2Left == 1 ));
+        // JFX_LOG("Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ));
+        // JFX_LOG("Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ));
     }
     else if ( addr == kNR11 || addr == kNR12 || addr == kNR13 || addr == kNR14 ) {
         _squareWaveChannel.writeByte( addr, value );
     }
     else {
-//        std::cout << "Untracked write at " << std::hex << addr << std::endl;
+//        JFX_LOG("Untracked write at " << std::hex << addr);
     }
 }
 
@@ -166,7 +166,7 @@ unsigned char PAPU::readByte( unsigned short addr ) const
         }
     }
     else {
-//        std::cout << "Untracked read at " << std::hex << addr << std::endl;
+//        JFX_LOG("Untracked read at " << std::hex << addr);
     }
     return 0;
 }
@@ -222,29 +222,29 @@ void PAPU::SquareWaveChannel::writeByte(
 {
     if ( addr == kNR11 ) {
         _nr11.write( value );
-        std::cout << "-----NR11-ff11-----" << std::endl;
-        std::cout << "Wave pattern duty            : " << _nr11.bits.getWaveDutyPercentage() << std::endl;
-        std::cout << "Length counter load register : " << (int)_nr11.bits.getSoundLength() << std::endl;
+        JFX_LOG("-----NR11-ff11-----");
+        JFX_LOG("Wave pattern duty            : " << _nr11.bits.getWaveDutyPercentage());
+        JFX_LOG("Length counter load register : " << (int)_nr11.bits.getSoundLength());
     }
     else if ( addr == kNR12 ) {
         _nr12.write( value );
-        std::cout << "-----NR12-ff12-----" << std::endl;
-        std::cout << "Initial channel volume       : " << (int)_nr12.bits.initialVolume << std::endl;
-        std::cout << "Volume sweep direction       : " << ( _nr12.bits.isAmplifying() ? "up" : "down" ) << std::endl;
-        std::cout << "Length of each step          : " << (int)_nr12.bits.sweepLength << std::endl;
+        JFX_LOG("-----NR12-ff12-----");
+        JFX_LOG("Initial channel volume       : " << (int)_nr12.bits.initialVolume);
+        JFX_LOG("Volume sweep direction       : " << ( _nr12.bits.isAmplifying() ? "up" : "down" ));
+        JFX_LOG("Length of each step          : " << (int)_nr12.bits.sweepLength);
     }
     else if ( addr == kNR13 ) {
         _nr13.write( value );
-        std::cout << "-----NR13-ff13-----" << std::endl;
-        std::cout << "Frequency lo: " << (int)_nr13.bits._freqLo << std::endl;
+        JFX_LOG("-----NR13-ff13-----");
+        JFX_LOG("Frequency lo: " << (int)_nr13.bits._freqLo);
     }
     else if ( addr == kNR14 ) {
         _nr14.write( value );
-        std::cout << "-----NR14-ff14-----" << std::endl;
-        std::cout << "Frequency hi : " << (int)_nr14.bits._freqHi << std::endl;
-        std::cout << "Consecutive  : " << ( _nr14.bits._consecutive == 0 ? "loop" : "play until NR21-length expires" ) << std::endl;
-        std::cout << "Initialize?  : " << ( _nr14.bits._initialize == 1 ) << std::endl;
-        std::cout << "Period       : " << _periodOneEight << std::endl;
+        JFX_LOG("-----NR14-ff14-----");
+        JFX_LOG("Frequency hi : " << (int)_nr14.bits._freqHi);
+        JFX_LOG("Consecutive  : " << ( _nr14.bits._consecutive == 0 ? "loop" : "play until NR21-length expires" ));
+        JFX_LOG("Initialize?  : " << ( _nr14.bits._initialize == 1 ));
+        JFX_LOG("Period       : " << _periodOneEight);
 
         if ( _nr14.bits._initialize ) {
             _timeBeforeNextPhase = _periodOneEight = _nr13.bits._freqLo | ( _nr14.bits._freqHi << 8 );

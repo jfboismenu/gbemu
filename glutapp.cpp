@@ -36,6 +36,7 @@
 #include "videoDisplay.h"
 #include "gameboy.h"
 #include "gbemu.h"
+#include "logger.h"
 
 namespace {
 
@@ -289,8 +290,23 @@ int main(int argc, char* argv[])
         std::cout << "Missing cartridge name" << std::endl;
         return 0;
     }
+    const char* cartPath(0);
+    const char* bootRomPath(0);
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--debug") {
+            Logger::enableLogger(true);
+        }
+        else if (!cartPath) {
+            cartPath = argv[i];
+        } else if (!bootRomPath) {
+            bootRomPath = argv[i];
+        } else {
+            std::cout << "Unexpected argument:" << argv[i] << std::endl;
+            return -1;
+        }
+    }
     std::unique_ptr< Gameboy > gbInstanceGuard(
-        gbemu::initGlobalEmulatorParams( argv[ 1 ], argc == 3 ? argv[ 2 ] : 0 ) );
+        gbemu::initGlobalEmulatorParams( cartPath, bootRomPath ) );
     gbInstance = gbInstanceGuard.get();
     
     printCartridgeInfo( gbInstance->getCartridge() );
