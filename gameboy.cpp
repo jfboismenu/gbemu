@@ -22,6 +22,11 @@ namespace gbemu
         return _video;
     }
 
+    PAPU& Gameboy::getPAPU()
+    {
+        return _papu;
+    }
+
     DebugStringHandlerRegistry& Gameboy::getDebugRegistry()
     {
         return _debugReg;
@@ -31,9 +36,9 @@ namespace gbemu
     {
         // emulate as many cycles as the cpu will be executing
         // FIXME: PAPU is not implemented, don't waste time there.
-        //_papu.emulate( _cpu.previewInstructionTiming() );
-        const int nbCycles = _cpu.emulateCycle() ;
-        _clock = ( _clock + nbCycles ) % ( 4 * 1024 * 1024 );
+        // _papu.emulate( _cpu.previewInstructionTiming() );
+        const int nbCycles = _cpu.emulateCycle();
+        _clock +=nbCycles;
         // If should stop emulating, break the loop
         if ( nbCycles <= 0 ) {
             return -1;
@@ -45,11 +50,11 @@ namespace gbemu
     }
 
     Gameboy::Gameboy(const char* const bootRom) :
+        _clock( 4194304 ),
         _memory( _bootRom, _video, _timers, _papu ),
         _cpu( _memory, _cartridge ),
         _video( _memory, !_bootRom.isInitialized() ),
         _papu( _clock ),
-        _clock( 0 ),
         _bootRom( bootRom ),
         _timers( _memory )
     {}

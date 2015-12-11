@@ -25,7 +25,7 @@ endif (WIN32)
 include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS} )
 
 set_source_files_properties(../glutapp.cpp PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
-add_executable(gbemu ../bootRom.cpp ../cartridgeInfo.cpp ../cpu.cpp ../debugging.cpp ../gameboy.cpp ../gbemu.cpp ../glutapp.cpp ../logger.cpp ../mbc.cpp ../memory.cpp ../memoryRegion.cpp ../opcode.cpp ../papu.cpp ../register.cpp ../registers.cpp ../videoDisplay.cpp ../timers.cpp)
+add_executable(gbemu ../bootRom.cpp ../cartridgeInfo.cpp ../clock.cpp ../cpu.cpp ../debugging.cpp ../gameboy.cpp ../gbemu.cpp ../glutapp.cpp ../logger.cpp ../mbc.cpp ../memory.cpp ../memoryRegion.cpp ../opcode.cpp ../papu.cpp ../register.cpp ../registers.cpp ../videoDisplay.cpp ../timers.cpp)
 
 target_link_libraries(gbemu ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} )
 

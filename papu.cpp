@@ -2,72 +2,29 @@
 #include "registers.h"
 #include "common.h"
 #include "logger.h"
+#include "clock.h"
 #include <iostream>
+
+namespace {
+    float gbNoteToFrequency(const int gbNote)
+    {
+        return 131072.f / (2048 - gbNote);
+    }
+}
 
 namespace gbemu {
 
-SoundChannel::SoundChannel() : _samples( ( 4 * 1024 * 1024 / 32 ) / 16, 0 ), _accumulator( 0 )
+// There are up to 4Mhz samples per second.
+SoundChannel::SoundChannel( int nbSamples ) : _samples( nbSamples, 0 )
 {
 }
 
 void SoundChannel::writeSample( int time, short sample )
 {
-    time %= _samples.size();
-    _accumulator += sample;
-    // If this is the last sample to accumulate
-    if ( ( time & 0xF ) == 0xF ) {
-        // Divide by 16
-        _accumulator >>= 4;
-        // Write the byte in the right slot
-        _samples[ static_cast< size_t >( time >> 4 ) ] =
-            static_cast< short >( _accumulator );
-        // Reset the accumulator
-        _accumulator = 0;
-    }
+    _samples[ time ] = sample;
 }
 
-const short* SoundChannel::getFirstHalf() const
-{
-    return &_samples[0];
-}
-
-const short* SoundChannel::getSecondHalf() const
-{
-    return &_samples[ getHalfSize() ];
-}
-
-size_t SoundChannel::getHalfSize() const
-{
-    return _samples.size() / 2;
-}
-
-size_t SoundChannel::getSize() const
-{
-    return _samples.size();
-}
-
-Counter::Counter( int length ) : _length( length ), _count( 0 )
-{
-
-}
-
-Counter& Counter::operator++()
-{
-    ++_count;
-    if ( _count == _length ) {
-        _overflowed = true;
-        _count = 0;
-    }
-
-    return *this;
-}
-
-bool Counter::hasOverflowed() const
-{
-    return _overflowed;
-}
-
-PAPU::PAPU( const int& clock ) : _clock( clock ), _squareWaveChannel( clock )
+PAPU::PAPU( const Clock& clock ) : _clock( clock ), _squareWaveChannel( clock )
 {
 /*
     mr(kNR10) = 0x80;
@@ -91,17 +48,9 @@ PAPU::PAPU( const int& clock ) : _clock( clock ), _squareWaveChannel( clock )
 */
 }
 
-void PAPU::registerSoundReadyCb( SoundReadyCb cb, void* clientData )
-{
-    _soundReadyCb = cb;
-    _clientData = clientData;
-}
-
 void PAPU::emulate( int nbCycles )
 {
-    for ( int i = 0; i < nbCycles; ++i ) {
-        _squareWaveChannel.emulate( 1 );
-    }
+    _squareWaveChannel.emulate( nbCycles );
 }
 
 const SoundChannel& PAPU::getSoundMix() const
@@ -177,9 +126,12 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
     return addr == kNR52 || !( ( _nr52.bits._allSoundOn == 0 ) && ( 0xFF10 <= addr ) && ( addr <= 0xFF2F ) );
 }
 
-PAPU::SquareWaveChannel::SquareWaveChannel( const int& clock ) :
+PAPU::SquareWaveChannel::SquareWaveChannel( const Clock& clock ) :
     _clock( clock ),
-    _soundLength( 0 )
+    _waveStart(0),
+    _waveLength(0),
+    _waveFrequency(0),
+    _channel(clock.getRate())
 {}
 
 const SoundChannel& PAPU::SquareWaveChannel::getSoundChannel() const
@@ -187,33 +139,44 @@ const SoundChannel& PAPU::SquareWaveChannel::getSoundChannel() const
     return _channel;
 }
 
+float PAPU::SquareWaveChannel::computeSample(
+    float frequency,
+    int timeSinceNoteStart
+) const
+{
+    const float cyclesPerSecond = _clock.getRate() / frequency;
+    // Compute how many times the sound has played, including fractions.
+    const float howManyTimes = timeSinceNoteStart / cyclesPerSecond;
+    // Compute how many times the sound has completely played.
+    const float howManyTimesCompleted = int(howManyTimes);
+    // Compute how far we are in the current cycle.
+    const float howManyInCurrent = howManyTimes - howManyTimesCompleted;
+    //std::cout << how_many << " " << how_many_completed << std::endl;
+    // SINE
+    // output[i] += sin(pos_in_cycle * 2 * M_PI) * 16;
+    // SQUARE
+    return howManyInCurrent < 0.5 ? 1.f : -1.f;
+}
+
 void PAPU::SquareWaveChannel::emulate( const int nbCycles )
 {
-    static const int dutyCycle[] = { 1, 2, 4, 6 };
     for ( int i = 0; i < nbCycles; ++i ) {
+        const int currentCycle(_clock.getTimeInCycle() + i);
         if ( isMuted() ) {
-            _channel.writeSample( _clock + i, 0 );
+            _channel.writeSample( currentCycle, 0 );
             continue;
         }
-        if ( _timeBeforeNextPhase == 0 ) {
-            _phase = ( _phase + 1 ) * 8;
-        }
-        // else if ( _phase < dutyCycle[ _nr11.bits.wavePatternDuty ] ) {
-        //     _channel.writeSample( _clock + i, -10000 );
-        // }
-        else {
-            _channel.writeSample( _clock + i, 10000 );
-        }
-        --_timeBeforeNextPhase;
-        --_soundLength;
+        _channel.writeSample(
+            currentCycle,
+            computeSample(_waveFrequency, _clock.getTimeFromStart() - _waveStart + i)
+        );
     }
 }
 
 bool PAPU::SquareWaveChannel::isMuted() const
 {
-    return _soundLength == 0;
+    return _waveLength == 0;
 }
-
 
 void PAPU::SquareWaveChannel::writeByte(
     const unsigned short addr,
@@ -244,14 +207,20 @@ void PAPU::SquareWaveChannel::writeByte(
         JFX_LOG("Frequency hi : " << (int)_nr14.bits._freqHi);
         JFX_LOG("Consecutive  : " << ( _nr14.bits._consecutive == 0 ? "loop" : "play until NR21-length expires" ));
         JFX_LOG("Initialize?  : " << ( _nr14.bits._initialize == 1 ));
-        JFX_LOG("Period       : " << _periodOneEight);
 
         if ( _nr14.bits._initialize ) {
-            _timeBeforeNextPhase = _periodOneEight = _nr13.bits._freqLo | ( _nr14.bits._freqHi << 8 );
-            _soundLength = ( 64 - _nr11.bits.getSoundLength() ) * 4 * 1024 * 1024 / 256;
-            _phase = 0;
+            const int gbNote = getGbNote();
+            JFX_CMP_ASSERT(2048 - gbNote, >, 0);
+            _waveStart = _clock.getTimeFromStart();
+            _waveLength = ( 64 - _nr11.bits.getSoundLength() );
+            _waveFrequency = gbNoteToFrequency(gbNote);
         }
     }
+}
+
+short PAPU::SquareWaveChannel::getGbNote() const
+{
+    return _nr13.bits._freqLo | ( _nr14.bits._freqHi << 8 );
 }
 
 }
