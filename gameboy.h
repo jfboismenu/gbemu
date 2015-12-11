@@ -24,6 +24,7 @@ namespace gbemu {
         Cartridge& getCartridge();
         VideoDisplay& getVideo();
         DebugStringHandlerRegistry& getDebugRegistry();
+        const Clock& getClock() const;
         int doCycle();
 
     private:

@@ -1,19 +1,11 @@
 #pragma once
 
 #include "register.h"
+#include <queue>
 
 namespace gbemu {
 
     class Clock;
-
-    class SoundChannel
-    {
-    public:
-        SoundChannel(int nbSamples);
-        void writeSample( int time, short sample );
-    private:
-        std::vector< short > _samples;
-    };
 
     class PAPU
     {
@@ -21,8 +13,6 @@ namespace gbemu {
         PAPU( const Clock& clock );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
-        void emulate( int nbCycles );
-        const SoundChannel& getSoundMix() const;
     private:
         class NR52bits
         {
@@ -53,8 +43,12 @@ namespace gbemu {
             unsigned char _freqHi : 3;
         private:
             unsigned char _unused : 3;
-        public:
             unsigned char _consecutive : 1;
+        public:
+            JFX_INLINE bool loops()
+            {
+                return _consecutive == 0;
+            }
             unsigned char _initialize : 1;
         };
 
@@ -148,21 +142,27 @@ namespace gbemu {
             SquareWaveChannel( const Clock& clock );
             void writeByte( unsigned short addr, unsigned char value );
             unsigned char readByte( unsigned short addr ) const;
-            void emulate( int nbCycles );
-            const SoundChannel& getSoundChannel() const;
         private:
+
+            struct SoundEvent
+            {
+                SoundEvent(int ws, int wl, int wf);
+                const int waveStart;
+                const int waveLength;
+                const int waveFrequency;
+            };
+
             float computeSample(float frequency, int timeSinceNoteStart) const;
             short getGbNote() const;
-            bool isMuted() const;
-            SoundChannel                                           _channel;
+
             Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _nr11;
             Register< EnveloppeBits >                              _nr12;
             Register< FrequencyLoBits, 0x0, 0xFF >                 _nr13;
             Register< FrequencyHiBits, 0x40, 0XFF >                _nr14;
-            int                                                    _waveStart;
-            int                                                    _waveLength;
-            int                                                    _waveFrequency;
             const Clock&                                           _clock;
+
+            std::queue<SoundEvent> _soundEvents;
+
         } _squareWaveChannel;
 
         Register< EnveloppeBits > _nr32;

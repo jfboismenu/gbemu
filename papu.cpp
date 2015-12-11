@@ -3,6 +3,7 @@
 #include "common.h"
 #include "logger.h"
 #include "clock.h"
+#include "mutex.h"
 #include <iostream>
 
 namespace {
@@ -10,19 +11,11 @@ namespace {
     {
         return 131072.f / (2048 - gbNote);
     }
+
+    gbemu::Mutex mutex;
 }
 
 namespace gbemu {
-
-// There are up to 4Mhz samples per second.
-SoundChannel::SoundChannel( int nbSamples ) : _samples( nbSamples, 0 )
-{
-}
-
-void SoundChannel::writeSample( int time, short sample )
-{
-    _samples[ time ] = sample;
-}
 
 PAPU::PAPU( const Clock& clock ) : _clock( clock ), _squareWaveChannel( clock )
 {
@@ -46,16 +39,6 @@ PAPU::PAPU( const Clock& clock ) : _clock( clock ), _squareWaveChannel( clock )
     mr(kNR51) = 0xF3;
     mr(kNR52) = 0xF1;
 */
-}
-
-void PAPU::emulate( int nbCycles )
-{
-    _squareWaveChannel.emulate( nbCycles );
-}
-
-const SoundChannel& PAPU::getSoundMix() const
-{
-    return _squareWaveChannel.getSoundChannel();
 }
 
 void PAPU::writeByte(
@@ -127,17 +110,8 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
 }
 
 PAPU::SquareWaveChannel::SquareWaveChannel( const Clock& clock ) :
-    _clock( clock ),
-    _waveStart(0),
-    _waveLength(0),
-    _waveFrequency(0),
-    _channel(clock.getRate())
+    _clock( clock )
 {}
-
-const SoundChannel& PAPU::SquareWaveChannel::getSoundChannel() const
-{
-    return _channel;
-}
 
 float PAPU::SquareWaveChannel::computeSample(
     float frequency,
@@ -156,26 +130,6 @@ float PAPU::SquareWaveChannel::computeSample(
     // output[i] += sin(pos_in_cycle * 2 * M_PI) * 16;
     // SQUARE
     return howManyInCurrent < 0.5 ? 1.f : -1.f;
-}
-
-void PAPU::SquareWaveChannel::emulate( const int nbCycles )
-{
-    for ( int i = 0; i < nbCycles; ++i ) {
-        const int currentCycle(_clock.getTimeInCycle() + i);
-        if ( isMuted() ) {
-            _channel.writeSample( currentCycle, 0 );
-            continue;
-        }
-        _channel.writeSample(
-            currentCycle,
-            computeSample(_waveFrequency, _clock.getTimeFromStart() - _waveStart + i)
-        );
-    }
-}
-
-bool PAPU::SquareWaveChannel::isMuted() const
-{
-    return _waveLength == 0;
 }
 
 void PAPU::SquareWaveChannel::writeByte(
@@ -205,15 +159,18 @@ void PAPU::SquareWaveChannel::writeByte(
         _nr14.write( value );
         JFX_LOG("-----NR14-ff14-----");
         JFX_LOG("Frequency hi : " << (int)_nr14.bits._freqHi);
-        JFX_LOG("Consecutive  : " << ( _nr14.bits._consecutive == 0 ? "loop" : "play until NR21-length expires" ));
+        JFX_LOG("Consecutive  : " << ( _nr14.bits.loops() ? "loop" : "play until NR21-length expires" ));
         JFX_LOG("Initialize?  : " << ( _nr14.bits._initialize == 1 ));
 
         if ( _nr14.bits._initialize ) {
             const int gbNote = getGbNote();
             JFX_CMP_ASSERT(2048 - gbNote, >, 0);
-            _waveStart = _clock.getTimeFromStart();
-            _waveLength = ( 64 - _nr11.bits.getSoundLength() );
-            _waveFrequency = gbNoteToFrequency(gbNote);
+
+            _soundEvents.push(SoundEvent(
+                _clock.getTimeFromStart(),
+                ( 64 - _nr11.bits.getSoundLength() ),
+                gbNoteToFrequency(gbNote)
+            ));
         }
     }
 }
@@ -222,5 +179,11 @@ short PAPU::SquareWaveChannel::getGbNote() const
 {
     return _nr13.bits._freqLo | ( _nr14.bits._freqHi << 8 );
 }
+
+PAPU::SquareWaveChannel::SoundEvent::SoundEvent(
+    int ws,
+    int wl,
+    int wf
+) : waveStart(ws), waveLength(wl), waveFrequency(wf) {}
 
 }

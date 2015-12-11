@@ -32,11 +32,14 @@ namespace gbemu
         return _debugReg;
     }
 
+    const Clock& Gameboy::getClock() const
+    {
+        return _clock;
+    }
+
     int Gameboy::doCycle()
     {
         // emulate as many cycles as the cpu will be executing
-        // FIXME: PAPU is not implemented, don't waste time there.
-        // _papu.emulate( _cpu.previewInstructionTiming() );
         const int nbCycles = _cpu.emulateCycle();
         _clock +=nbCycles;
         // If should stop emulating, break the loop
