@@ -168,6 +168,7 @@ namespace gbemu {
             struct SoundEvent
             {
                 SoundEvent(
+                    bool pl,
                     bool il,
                     int64_t ws,
                     float wsis,
@@ -175,6 +176,7 @@ namespace gbemu {
                     int wf
                 );
                 SoundEvent() = default;
+                bool isPlaying;
                 bool isLooping;
                 int waveStart;
                 float waveStartInSeconds;
