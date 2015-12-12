@@ -30,10 +30,17 @@ CyclicCounter& CyclicCounter::operator++()
     return *this;
 }
 
-CyclicCounter CyclicCounter::operator+() const
+CyclicCounter CyclicCounter::operator+(int i) const
 {
     CyclicCounter counter(*this);
-    ++counter;
+    counter._count = (counter._count + i) % _cycleLength;
+    return counter;
+}
+
+CyclicCounter CyclicCounter::operator-(int i) const
+{
+    CyclicCounter counter(*this);
+    counter._count = (counter._count - i) % _cycleLength;
     return counter;
 }
 
@@ -201,10 +208,32 @@ void PAPU::SquareWaveChannel::renderAudio(void* raw_output, const unsigned long 
         return;
     }
 
-    for (int long i = 0 ; i < frameCount; ++i) {
-        const float frameTimeInSeconds = startInSeconds + (lengthInSeconds * i / rate);
-        const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[_firstEvent].waveStartInSeconds);
-        output[i] = computeSample(_soundEvents[_firstEvent].waveFrequency, timeSinceEventStart) * 16;
+    CyclicCounter currentEvent = _firstEvent;
+
+    for (unsigned long i = 0 ; i < frameCount; ++i) {
+        const float depth = float(i) / frameCount;
+        const float frameTimeInSeconds = startInSeconds + depth * lengthInSeconds;
+
+        // If there are no more events to process, play nothing.
+        if (currentEvent == _lastEvent) {
+            output[i] = 0;
+            continue;
+        } else if (frameTimeInSeconds < _soundEvents[currentEvent].waveStartInSeconds) {
+            // If we still haven't reached the first note, play nothing.
+            output[i] = 0;
+            continue;
+        } else {
+            // While the current event
+            while (frameTimeInSeconds > _soundEvents[currentEvent].waveEndInSeconds() && currentEvent != _lastEvent) {
+                ++currentEvent;
+            }
+            if (currentEvent == _lastEvent) {
+                output[i] = 0;
+                continue;
+            }
+        }
+        const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
+        output[i] = computeSample(_soundEvents[currentEvent].waveFrequency, timeSinceEventStart) * 16;
     }
 }
 
@@ -250,7 +279,7 @@ void PAPU::SquareWaveChannel::updateEventsQueue(const float audioFrameStartInSec
         }
         // Audio is not looping, so if the end of this event is before the
         // section we want to render, skip it.
-        else if (_soundEvents[i].waveEndInSeconds() < _playbackIntervalStart) {
+        else if (_soundEvents[i].waveEndInSeconds() < audioFrameStartInSeconds) {
             ++_firstEvent;
         } else {
             // The _firstEvent is still playing, so it follows logic that
@@ -290,12 +319,11 @@ void PAPU::SquareWaveChannel::writeByte(
         JFX_LOG("Consecutive  : " << ( _nr14.bits.isLooping() ? "loop" : "play until NR21-length expires" ));
         JFX_LOG("Initialize?  : " << ( _nr14.bits._initialize == 1 ));
 
+        // Push a new sound event in a thread-safe manner.
+        MutexGuard g(mutex);
+        const int gbNote = getGbNote();
+        JFX_CMP_ASSERT(2048 - gbNote, >, 0);
         if ( _nr14.bits._initialize == 1 ) {
-            const int gbNote = getGbNote();
-            JFX_CMP_ASSERT(2048 - gbNote, >, 0);
-
-            // Push a new sound event in a thread-safe manner.
-            MutexGuard g(mutex);
             _soundEvents[_lastEvent] = SoundEvent(
                 _nr14.bits.isLooping(),
                 _clock.getTimeInCycles(),
@@ -303,8 +331,8 @@ void PAPU::SquareWaveChannel::writeByte(
                 _nr11.bits.getSoundLength(),
                 gbNoteToFrequency(gbNote)
             );
-            ++_lastEvent;
         }
+        ++_lastEvent;
     }
 }
 

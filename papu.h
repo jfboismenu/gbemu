@@ -12,7 +12,8 @@ namespace gbemu {
     public:
         CyclicCounter(const int cycleLength);
         CyclicCounter& operator++();
-        CyclicCounter operator+() const;
+        CyclicCounter operator+(int i) const;
+        CyclicCounter operator-(int i) const;
         bool operator!=(const CyclicCounter&) const;
         bool operator==(const CyclicCounter&) const;
         operator int() const;
