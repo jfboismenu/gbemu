@@ -157,8 +157,14 @@ namespace gbemu {
         class SquareWaveChannel
         {
         public:
-            SquareWaveChannel( const Clock& clock );
-            void renderAudio(void* output, const unsigned long frameCount, const int rate);
+            SquareWaveChannel(
+                const Clock& clock,
+                unsigned short soundLengthRegisterAddr,
+                unsigned short evenloppeRegisterAddr,
+                unsigned short frequencyLowRegisterAddr,
+                unsigned short frequencyHiRegisterAddr
+            );
+            void renderAudio(void* output, const unsigned long frameCount, const int rate, const float realTime);
             void writeByte( unsigned short addr, unsigned char value );
             unsigned char readByte( unsigned short addr ) const;
         private:
@@ -173,7 +179,8 @@ namespace gbemu {
                     int64_t ws,
                     float wsis,
                     float wlis,
-                    int wf
+                    int wf,
+                    float d
                 );
                 SoundEvent() = default;
                 bool isPlaying;
@@ -182,10 +189,11 @@ namespace gbemu {
                 float waveStartInSeconds;
                 float waveLengthInSeconds;
                 int waveFrequency;
+                float waveDuty;
                 float waveEndInSeconds() const;
             };
 
-            char computeSample(float frequency, float timeSinceNoteStart) const;
+            char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
             short getGbNote() const;
 
             Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _nr11;
@@ -196,12 +204,20 @@ namespace gbemu {
             int64_t _playbackIntervalEnd;
             int64_t _playbackIntervalStart;
 
+            unsigned short _soundLengthRegisterAddr;
+            unsigned short _evenloppeRegisterAddr;
+            unsigned short _frequencyLowRegisterAddr;
+            unsigned short _frequencyHiRegisterAddr;
+
             std::array<SoundEvent, 32> _soundEvents;
 
             CyclicCounter                _firstEvent;
             CyclicCounter                _lastEvent;
 
-        } _squareWaveChannel;
+        };
+
+        SquareWaveChannel  _squareWaveChannel1;
+        SquareWaveChannel  _squareWaveChannel2;
 
         Register< EnveloppeBits > _nr32;
         Register< SoundLengthBits, 0xB0, 0xFF > _nr41;
