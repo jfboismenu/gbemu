@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 
 #include <portaudio.h>
 
@@ -7,11 +7,12 @@ namespace gbemu {
     class Audio
     {
     public:
-        using AudioCallback = void(void* output, const unsigned long frameCount, const int rate);
+        using AudioCallback = void(void* output, const unsigned long frameCount, const int rate, void* userData);
 
         Audio(
             const int samples_per_second,
-            AudioCallback user_callback
+            void* userData,
+            AudioCallback userCallback
         );
 
         ~Audio();
@@ -28,7 +29,8 @@ namespace gbemu {
             const PaStreamCallbackFlags statusFlags,
             void *userData
         );
-        AudioCallback* _user_callback;
+        void* _userData;
+        AudioCallback* _userCallback;
         PaStream *_stream;
         int _rate;
     };

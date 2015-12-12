@@ -12,10 +12,50 @@ namespace {
         return 131072.f / (2048 - gbNote);
     }
 
+    const int PLAY_FOREVER = 0x7fffffff;
+
     gbemu::Mutex mutex;
 }
 
 namespace gbemu {
+
+CyclicCounter::CyclicCounter(const int cycleLength) :
+    _cycleLength(cycleLength),
+    _count(0)
+{}
+
+CyclicCounter& CyclicCounter::operator++()
+{
+    _count = (_count + 1) % _cycleLength;
+    return *this;
+}
+
+CyclicCounter CyclicCounter::operator+() const
+{
+    CyclicCounter counter(*this);
+    ++counter;
+    return counter;
+}
+
+bool CyclicCounter::operator!=(const CyclicCounter& that) const
+{
+    return _count != that._count;
+}
+
+bool CyclicCounter::operator==(const CyclicCounter& that) const
+{
+    return _count == that._count;
+}
+
+CyclicCounter::operator int() const
+{
+    return _count;
+}
+
+void PAPU::renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData)
+{
+    reinterpret_cast<PAPU*>(userData)->renderAudioInternal(output, frameCount, rate);
+}
 
 PAPU::PAPU( const Clock& clock ) : _clock( clock ), _squareWaveChannel( clock )
 {
@@ -109,27 +149,115 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
     return addr == kNR52 || !( ( _nr52.bits._allSoundOn == 0 ) && ( 0xFF10 <= addr ) && ( addr <= 0xFF2F ) );
 }
 
+void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, const int rate)
+{
+    _squareWaveChannel.renderAudio(output, frameCount, rate);
+}
+
 PAPU::SquareWaveChannel::SquareWaveChannel( const Clock& clock ) :
-    _clock( clock )
+    _clock( clock ),
+    _playbackIntervalStart(0),
+    _playbackIntervalEnd(0),
+    _firstEvent(_soundEvents.size()),
+    _lastEvent(_soundEvents.size())
 {}
 
-float PAPU::SquareWaveChannel::computeSample(
+char PAPU::SquareWaveChannel::computeSample(
     float frequency,
-    int timeSinceNoteStart
+    float timeSinceNoteStart
 ) const
 {
-    const float cyclesPerSecond = _clock.getRate() / frequency;
+    const float cycleLength = 1 / frequency;
     // Compute how many times the sound has played, including fractions.
-    const float howManyTimes = timeSinceNoteStart / cyclesPerSecond;
+    const float howManyTimes = timeSinceNoteStart / cycleLength;
     // Compute how many times the sound has completely played.
     const float howManyTimesCompleted = int(howManyTimes);
     // Compute how far we are in the current cycle.
     const float howManyInCurrent = howManyTimes - howManyTimesCompleted;
+    //std::cout << howManyTimes << "  "  << howManyTimesCompleted << std::endl;
     //std::cout << how_many << " " << how_many_completed << std::endl;
     // SINE
     // output[i] += sin(pos_in_cycle * 2 * M_PI) * 16;
     // SQUARE
-    return howManyInCurrent < 0.5 ? 1.f : -1.f;
+    //std::cout << howManyInCurrent << std::endl;
+    return howManyInCurrent < 0.5 ? 1 : -1;
+}
+
+void PAPU::SquareWaveChannel::renderAudio(void* raw_output, const unsigned long frameCount, const int rate)
+{
+    char* output = reinterpret_cast<char*>(raw_output);
+    // Update the interval of sound we're about to produce
+    updatePlaybackInterval();
+
+    // Convert the start and end to seconds.
+    const float startInSeconds = float(_playbackIntervalStart) / _clock.getRate();
+    const float endInSeconds = float(_playbackIntervalEnd) / _clock.getRate();
+    const float lengthInSeconds = endInSeconds - startInSeconds;
+    updateEventsQueue(startInSeconds);
+
+    // Queue is empty, do not play anything.
+    if (_firstEvent == _lastEvent) {
+        memset(output, 0, frameCount);
+        return;
+    }
+
+    for (int long i = 0 ; i < frameCount; ++i) {
+        const float frameTimeInSeconds = startInSeconds + (lengthInSeconds * i / rate);
+        const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[_firstEvent].waveStartInSeconds);
+        output[i] = computeSample(_soundEvents[_firstEvent].waveFrequency, timeSinceEventStart) * 16;
+    }
+}
+
+void PAPU::SquareWaveChannel::updatePlaybackInterval()
+{
+    // Take a note of the current emulator time.
+    const int64_t currentTime = _clock.getTimeInCycles();
+
+    // Compare that time with the end of the last render window.
+    // If the end time has changed, emulation has move forward, so we need to update
+    // the audio queue.
+    if (_playbackIntervalEnd != currentTime) {
+        // take the end time and make that the new start time
+        // update the end time with the new time we've found.
+        _playbackIntervalStart = _playbackIntervalEnd;
+        _playbackIntervalEnd = currentTime;
+    }
+}
+
+void PAPU::SquareWaveChannel::updateEventsQueue(const float audioFrameStartInSeconds)
+{
+    MutexGuard g(mutex);
+    for (CyclicCounter i = _firstEvent; i != _lastEvent ; ++i) {
+
+        // If sound is looping not looping and the end of that audio event is before this audio frame.
+        if (_soundEvents[i].isLooping) {
+             // If this is not the last event, the next event might silence this one?
+            if (i + 1 != _lastEvent) {
+                // if that next event starts before the current audio
+                if (_soundEvents[i + 1].waveStart < _playbackIntervalStart) {
+                    ++_firstEvent;
+                } else {
+                    // The next event starts after the current playback interval,
+                    // so we can assume that this sound event will play
+                    // in the current playback interval.
+                    break;
+                }
+            } else {
+                // This sound event is looping and is the last in the queue,
+                // so it is still playing.
+                break;
+            }
+        }
+        // Audio is not looping, so if the end of this event is before the
+        // section we want to render, skip it.
+        else if (_soundEvents[i].waveEndInSeconds() < _playbackIntervalStart) {
+            ++_firstEvent;
+        } else {
+            // The _firstEvent is still playing, so it follows logic that
+            // the ones after will also be playing, so we can break.
+            break;
+        }
+    }
 }
 
 void PAPU::SquareWaveChannel::writeByte(
@@ -159,18 +287,23 @@ void PAPU::SquareWaveChannel::writeByte(
         _nr14.write( value );
         JFX_LOG("-----NR14-ff14-----");
         JFX_LOG("Frequency hi : " << (int)_nr14.bits._freqHi);
-        JFX_LOG("Consecutive  : " << ( _nr14.bits.loops() ? "loop" : "play until NR21-length expires" ));
+        JFX_LOG("Consecutive  : " << ( _nr14.bits.isLooping() ? "loop" : "play until NR21-length expires" ));
         JFX_LOG("Initialize?  : " << ( _nr14.bits._initialize == 1 ));
 
-        if ( _nr14.bits._initialize ) {
+        if ( _nr14.bits._initialize == 1 ) {
             const int gbNote = getGbNote();
             JFX_CMP_ASSERT(2048 - gbNote, >, 0);
 
-            _soundEvents.push(SoundEvent(
-                _clock.getTimeFromStart(),
-                ( 64 - _nr11.bits.getSoundLength() ),
+            // Push a new sound event in a thread-safe manner.
+            MutexGuard g(mutex);
+            _soundEvents[_lastEvent] = SoundEvent(
+                _nr14.bits.isLooping(),
+                _clock.getTimeInCycles(),
+                _clock.getTimeInSeconds(),
+                _nr11.bits.getSoundLength(),
                 gbNoteToFrequency(gbNote)
-            ));
+            );
+            ++_lastEvent;
         }
     }
 }
@@ -181,9 +314,21 @@ short PAPU::SquareWaveChannel::getGbNote() const
 }
 
 PAPU::SquareWaveChannel::SoundEvent::SoundEvent(
-    int ws,
-    int wl,
+    bool il,
+    int64_t ws,
+    float wsis,
+    float wlis,
     int wf
-) : waveStart(ws), waveLength(wl), waveFrequency(wf) {}
+) : isLooping(il),
+    waveStart(ws),
+    waveStartInSeconds(wsis),
+    waveLengthInSeconds(wlis),
+    waveFrequency(wf)
+{}
+
+float PAPU::SquareWaveChannel::SoundEvent::waveEndInSeconds() const
+{
+    return waveStartInSeconds + waveLengthInSeconds;
+}
 
 }

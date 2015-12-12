@@ -216,34 +216,6 @@ namespace {
 
         glFlush();
     }
-
-
-    void resampler(
-        void* output,
-        const unsigned long nbSamples,
-        const int rate
-    )
-    {
-        static int64_t currentFrame = 0;
-
-        // PAPU& papu(gbInstance->getPAPU());
-        const Clock& clock(gbInstance->getClock());
-        /*
-        int windowSize(rate)
-
-        for (int i = 0; i < nbSamples, ++i, ++currentFrame) {
-            // Computes the current gameboy time within the current second.
-            const float currentGbTime(
-                // What's the proportion of time spent in the current second?
-                (currentFrame % rate) / float(rate) *
-                clock.getRate()
-            );
-        */
-
-        std::cout << (clock.getTimeFromStart() / float(clock.getRate())) << " --> " << (currentFrame / float(rate)) << std::endl;
-
-        currentFrame += nbSamples;
-    }
 }
 
 int main(int argc, char* argv[])
@@ -277,7 +249,9 @@ int main(int argc, char* argv[])
         gbemu::initGlobalEmulatorParams( cartPath, bootRomPath ) );
     gbInstance = gbInstanceGuard.get();
 
-    Audio audio(44100, resampler);
+    Audio audio(
+        44100, &gbInstance->getPAPU(), gbInstance->getPAPU().renderAudio
+    );
 
     // Dump some info about the game we're about to play.
     printCartridgeInfo( gbInstance->getCartridge() );

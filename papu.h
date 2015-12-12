@@ -1,19 +1,36 @@
 #pragma once
 
 #include "register.h"
-#include <queue>
+#include <array>
 
 namespace gbemu {
 
     class Clock;
 
+    class CyclicCounter
+    {
+    public:
+        CyclicCounter(const int cycleLength);
+        CyclicCounter& operator++();
+        CyclicCounter operator+() const;
+        bool operator!=(const CyclicCounter&) const;
+        bool operator==(const CyclicCounter&) const;
+        operator int() const;
+    private:
+        const int _cycleLength;
+        int _count;
+    };
+
     class PAPU
     {
     public:
+        static void renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData);
         PAPU( const Clock& clock );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
     private:
+        void renderAudioInternal(void* output, const unsigned long frameCount, const int rate);
+
         class NR52bits
         {
         public:
@@ -45,7 +62,7 @@ namespace gbemu {
             unsigned char _unused : 3;
             unsigned char _consecutive : 1;
         public:
-            JFX_INLINE bool loops()
+            JFX_INLINE bool isLooping() const
             {
                 return _consecutive == 0;
             }
@@ -70,7 +87,7 @@ namespace gbemu {
                         JFX_MSG_ASSERT( "Wave pattern duty invalid: " << wavePatternDuty );
                 }
             }
-            float getSoundLength()
+            float getSoundLength() const
             {
                 return (64 - soundLength) * (1.f / 256);
             }
@@ -140,19 +157,32 @@ namespace gbemu {
         {
         public:
             SquareWaveChannel( const Clock& clock );
+            void renderAudio(void* output, const unsigned long frameCount, const int rate);
             void writeByte( unsigned short addr, unsigned char value );
             unsigned char readByte( unsigned short addr ) const;
         private:
-
+            void updatePlaybackInterval();
+            void updateEventsQueue(const float audioFrameStartInSeconds);
+            void incrementFirstEventIndex();
             struct SoundEvent
             {
-                SoundEvent(int ws, int wl, int wf);
-                const int waveStart;
-                const int waveLength;
-                const int waveFrequency;
+                SoundEvent(
+                    bool il,
+                    int64_t ws,
+                    float wsis,
+                    float wlis,
+                    int wf
+                );
+                SoundEvent() = default;
+                bool isLooping;
+                int waveStart;
+                float waveStartInSeconds;
+                float waveLengthInSeconds;
+                int waveFrequency;
+                float waveEndInSeconds() const;
             };
 
-            float computeSample(float frequency, int timeSinceNoteStart) const;
+            char computeSample(float frequency, float timeSinceNoteStart) const;
             short getGbNote() const;
 
             Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _nr11;
@@ -160,8 +190,13 @@ namespace gbemu {
             Register< FrequencyLoBits, 0x0, 0xFF >                 _nr13;
             Register< FrequencyHiBits, 0x40, 0XFF >                _nr14;
             const Clock&                                           _clock;
+            int64_t _playbackIntervalEnd;
+            int64_t _playbackIntervalStart;
 
-            std::queue<SoundEvent> _soundEvents;
+            std::array<SoundEvent, 32> _soundEvents;
+
+            CyclicCounter                _firstEvent;
+            CyclicCounter                _lastEvent;
 
         } _squareWaveChannel;
 

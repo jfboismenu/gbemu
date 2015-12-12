@@ -6,8 +6,10 @@ namespace gbemu {
 
     Audio::Audio(
         const int rate,
-        AudioCallback user_callback
-    ) : _user_callback(user_callback),
+        void* userData,
+        AudioCallback userCallback
+    ) : _userCallback(userCallback),
+        _userData(userData),
         _rate(rate)
     {
         PaError err = Pa_Initialize();
@@ -59,10 +61,11 @@ namespace gbemu {
     )
     {
         Audio& audio(*reinterpret_cast<Audio*>(userData));
-        (audio._user_callback)(
+        (audio._userCallback)(
             raw_output,
             frameCount,
-            audio._rate
+            audio._rate,
+            audio._userData
         );
         return paContinue;
     }

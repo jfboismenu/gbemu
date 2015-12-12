@@ -3,23 +3,23 @@
 namespace gbemu {
 
 
-    Clock::Clock(int64_t rate) : _rate(rate), _timeFromStart(0)
+    Clock::Clock(int64_t rate) : _rate(rate), _time(0)
     {}
 
     Clock& Clock::operator+=(int cycles)
     {
-        _timeFromStart += cycles;
+        _time += cycles;
         return *this;
     }
 
-    int Clock::getTimeFromStart() const
+    int64_t Clock::getTimeInCycles() const
     {
-        return _timeFromStart;
+        return _time;
     }
 
-    int Clock::getTimeInCycle() const
+    float Clock::getTimeInSeconds() const
     {
-        return _timeFromStart % _rate;
+        return float(_time) / getRate();
     }
 
     int Clock::getRate() const
