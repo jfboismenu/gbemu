@@ -264,7 +264,9 @@ namespace {
             unsigned char
         )
         {
-            JFX_MSG_ASSERT( "Not supposed to write to None MBC" );
+            // FIXME: Had to deactivate this. Maybe it should only
+            // be a warning?
+            //JFX_MSG_ASSERT( "Not supposed to write to None MBC" );
         }
         virtual unsigned char readByte(
             unsigned short addr
