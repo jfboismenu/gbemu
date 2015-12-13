@@ -46,8 +46,8 @@ namespace gbemu {
         void emulate( int nbCycles );
         bool isFrameReady() const;
         const Color* getPixels() const;
-        virtual void writeByte(unsigned short addr, unsigned char byte);
-        virtual unsigned char readByte(unsigned short addr) const;
+        void writeByte(unsigned short addr, unsigned char byte);
+        unsigned char readByte(unsigned short addr) const;
     private:
 
         Color& getPixel(int x, int y);
