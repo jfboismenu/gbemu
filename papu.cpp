@@ -246,7 +246,7 @@ void PAPU::SquareWaveChannel::renderAudio(void* raw_output, const unsigned long 
         }
         if (_soundEvents[currentEvent].isPlaying) {
             const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
-            output[i] += computeSample(_soundEvents[currentEvent].waveFrequency, timeSinceEventStart, _soundEvents[currentEvent].waveDuty) * 4;
+            output[i] += computeSample(_soundEvents[currentEvent].waveFrequency, timeSinceEventStart, _soundEvents[currentEvent].waveDuty) * _soundEvents[currentEvent].waveVolume;
         }
     }
 }
@@ -345,7 +345,8 @@ void PAPU::SquareWaveChannel::writeByte(
             _clock.getTimeInSeconds(),
             _nr11.bits.getSoundLength(),
             gbNoteToFrequency(gbNote),
-            _nr11.bits.getWaveDutyPercentage()
+            _nr11.bits.getWaveDutyPercentage(),
+            _nr12.bits.initialVolume
         );
         ++_lastEvent;
     }
@@ -363,14 +364,16 @@ PAPU::SquareWaveChannel::SoundEvent::SoundEvent(
     float wsis,
     float wlis,
     int wf,
-    float d
+    float d,
+    char v
 ) : isPlaying(ip),
     isLooping(il),
     waveStart(ws),
     waveStartInSeconds(wsis),
     waveLengthInSeconds(wlis),
     waveFrequency(wf),
-    waveDuty(d)
+    waveDuty(d),
+    waveVolume(v)
 {}
 
 float PAPU::SquareWaveChannel::SoundEvent::waveEndInSeconds() const

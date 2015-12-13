@@ -180,7 +180,8 @@ namespace gbemu {
                     float wsis,
                     float wlis,
                     int wf,
-                    float d
+                    float d,
+                    char v
                 );
                 SoundEvent() = default;
                 bool isPlaying;
@@ -190,6 +191,7 @@ namespace gbemu {
                 float waveLengthInSeconds;
                 int waveFrequency;
                 float waveDuty;
+                char waveVolume;
                 float waveEndInSeconds() const;
             };
 
