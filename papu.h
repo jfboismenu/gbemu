@@ -7,10 +7,11 @@ namespace gbemu {
 
     class Clock;
 
+    template<int CycleLength>
     class CyclicCounter
     {
     public:
-        CyclicCounter(const int cycleLength);
+        CyclicCounter(int count);
         CyclicCounter& operator++();
         CyclicCounter operator+(int i) const;
         CyclicCounter operator-(int i) const;
@@ -18,7 +19,6 @@ namespace gbemu {
         bool operator==(const CyclicCounter&) const;
         operator int() const;
     private:
-        const int _cycleLength;
         int _count;
     };
 
@@ -168,7 +168,6 @@ namespace gbemu {
             void writeByte( unsigned short addr, unsigned char value );
             unsigned char readByte( unsigned short addr ) const;
         private:
-            void updatePlaybackInterval();
             void updateEventsQueue(const float audioFrameStartInSeconds);
             void incrementFirstEventIndex();
             struct SoundEvent
@@ -203,18 +202,21 @@ namespace gbemu {
             Register< FrequencyLoBits, 0x0, 0xFF >                 _nr13;
             Register< FrequencyHiBits, 0x40, 0XFF >                _nr14;
             const Clock&                                           _clock;
-            int64_t _playbackIntervalEnd;
-            int64_t _playbackIntervalStart;
 
             unsigned short _soundLengthRegisterAddr;
             unsigned short _evenloppeRegisterAddr;
             unsigned short _frequencyLowRegisterAddr;
             unsigned short _frequencyHiRegisterAddr;
 
-            std::array<SoundEvent, 32> _soundEvents;
+            enum {BUFFER_SIZE = 32};
 
-            CyclicCounter                _firstEvent;
-            CyclicCounter                _lastEvent;
+            std::array<SoundEvent, BUFFER_SIZE> _soundEvents;
+
+            using BufferIndex = CyclicCounter<BUFFER_SIZE>;
+
+            BufferIndex               _firstEvent;
+            BufferIndex               _lastEvent;
+            BufferIndex               _playbackLastEvent;
 
         };
 

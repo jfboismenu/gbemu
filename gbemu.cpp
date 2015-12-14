@@ -121,7 +121,7 @@ namespace gbemu {
                 break;
             }
         }
-        gbInstance.getCartridge().saveRAM();
+        //gbInstance.getCartridge().saveRAM();
         return frameReady;
     }
     

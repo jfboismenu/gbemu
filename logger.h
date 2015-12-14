@@ -20,4 +20,6 @@ namespace gbemu {
             std::cout << output << std::endl; \
         } \
     }
+
+    #define JFX_LOG_VAR(var) JFX_LOG(#var " " << var)
 }

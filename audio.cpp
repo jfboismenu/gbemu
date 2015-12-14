@@ -24,7 +24,7 @@ namespace gbemu {
             1,          // mono output
             paInt8,     // 8 bit integer output
             rate,       // sample rate
-            rate / 60,        // number of frames asked each iteration.
+            rate / 512,        // number of frames asked each iteration.
             Audio::callback, // this is your callback function
             this
         );

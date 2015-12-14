@@ -19,42 +19,48 @@ namespace {
 
 namespace gbemu {
 
-CyclicCounter::CyclicCounter(const int cycleLength) :
-    _cycleLength(cycleLength),
-    _count(0)
+template<int CycleLength>
+CyclicCounter<CycleLength>::CyclicCounter(const int count) :
+    _count(count % CycleLength)
 {}
 
-CyclicCounter& CyclicCounter::operator++()
+template<int CycleLength>
+CyclicCounter<CycleLength>& CyclicCounter<CycleLength>::operator++()
 {
-    _count = (_count + 1) % _cycleLength;
+    _count = (_count + 1) % CycleLength;
     return *this;
 }
 
-CyclicCounter CyclicCounter::operator+(int i) const
+template<int CycleLength>
+CyclicCounter<CycleLength> CyclicCounter<CycleLength>::operator+(int i) const
 {
-    CyclicCounter counter(*this);
-    counter._count = (counter._count + i) % _cycleLength;
+    CyclicCounter<CycleLength> counter(*this);
+    counter._count = (counter._count + i) % CycleLength;
     return counter;
 }
 
-CyclicCounter CyclicCounter::operator-(int i) const
+template<int CycleLength>
+CyclicCounter<CycleLength> CyclicCounter<CycleLength>::operator-(int i) const
 {
-    CyclicCounter counter(*this);
-    counter._count = (counter._count - i) % _cycleLength;
+    CyclicCounter<CycleLength> counter(*this);
+    counter._count = (counter._count - i) % CycleLength;
     return counter;
 }
 
-bool CyclicCounter::operator!=(const CyclicCounter& that) const
+template<int CycleLength>
+bool CyclicCounter<CycleLength>::operator!=(const CyclicCounter& that) const
 {
     return _count != that._count;
 }
 
-bool CyclicCounter::operator==(const CyclicCounter& that) const
+template<int CycleLength>
+bool CyclicCounter<CycleLength>::operator==(const CyclicCounter& that) const
 {
     return _count == that._count;
 }
 
-CyclicCounter::operator int() const
+template<int CycleLength>
+CyclicCounter<CycleLength>::operator int() const
 {
     return _count;
 }
@@ -181,10 +187,9 @@ PAPU::SquareWaveChannel::SquareWaveChannel(
     unsigned short frequencyHiRegisterAddr
 ) :
     _clock( clock ),
-    _playbackIntervalStart(0),
-    _playbackIntervalEnd(0),
-    _firstEvent(_soundEvents.size()),
-    _lastEvent(_soundEvents.size()),
+    _firstEvent(0),
+    _lastEvent(0),
+    _playbackLastEvent(0),
     _soundLengthRegisterAddr(soundLengthRegisterAddr),
     _evenloppeRegisterAddr(evenloppeRegisterAddr),
     _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
@@ -214,32 +219,35 @@ void PAPU::SquareWaveChannel::renderAudio(void* raw_output, const unsigned long 
 {
     char* output = reinterpret_cast<char*>(raw_output);
     // Update the interval of sound we're about to produce
-    updatePlaybackInterval();
-
     // Convert the start and end to seconds.
-    const float startInSeconds = float(_playbackIntervalStart) / _clock.getRate();
-    const float endInSeconds = float(_playbackIntervalEnd) / _clock.getRate();
-    const float lengthInSeconds = endInSeconds - startInSeconds;
+    const float startInSeconds = realTime;
+    const float endInSeconds = realTime + (float(frameCount) / rate);
     updateEventsQueue(startInSeconds);
 
+
+    const int cycleStart = startInSeconds * _clock.getRate();
+    const int cycleEnd = endInSeconds * _clock.getRate();
+
+    JFX_LOG_VAR(_clock.getTimeInSeconds() - realTime);
+
     // Queue is empty, do not play anything.
-    if (_firstEvent == _lastEvent) {
+    if (_firstEvent == _playbackLastEvent) {
         return;
     }
 
-    CyclicCounter currentEvent = _firstEvent;
+    BufferIndex currentEvent = _firstEvent;
 
     for (unsigned long i = 0 ; i < frameCount; ++i) {
         // Peneration of the loop.
         const float depth = float(i) / frameCount;
         // Compute the current cpu cycle.
-        const int currentCpuCycle = depth * (_playbackIntervalEnd - _playbackIntervalStart) + _playbackIntervalStart;
+        const int currentCpuCycle = depth * (cycleEnd - cycleStart) + cycleStart;
         // Compute the real time in seconds this sample will represent.
         const float frameTimeInSeconds = realTime + (float(i) / rate);
 
         // If there are no more events to process, play nothing.
-        if (currentEvent == _lastEvent) {
-            continue;
+        if (currentEvent == _playbackLastEvent) {
+            break;
         } else if (currentCpuCycle < _soundEvents[currentEvent].waveStart) {
             // If we still haven't reached the first note, play nothing.
             continue;
@@ -251,33 +259,19 @@ void PAPU::SquareWaveChannel::renderAudio(void* raw_output, const unsigned long 
     }
 }
 
-void PAPU::SquareWaveChannel::updatePlaybackInterval()
-{
-    // Take a note of the current emulator time.
-    const int64_t currentTime = _clock.getTimeInCycles();
-
-    // Compare that time with the end of the last render window.
-    // If the end time has changed, emulation has move forward, so we need to update
-    // the audio queue.
-    if (_playbackIntervalEnd != currentTime) {
-        // take the end time and make that the new start time
-        // update the end time with the new time we've found.
-        _playbackIntervalStart = _playbackIntervalEnd;
-        _playbackIntervalEnd = currentTime;
-    }
-}
-
-void PAPU::SquareWaveChannel::updateEventsQueue(const float audioFrameStartInSeconds)
+void PAPU::SquareWaveChannel::updateEventsQueue(
+    const float audioFrameStartInSeconds
+)
 {
     MutexGuard g(mutex);
-    for (CyclicCounter i = _firstEvent; i != _lastEvent ; ++i) {
+    for (BufferIndex i = _firstEvent; i != _playbackLastEvent ; ++i) {
 
         // If sound is looping and the end of that audio event is before this audio frame.
         if (_soundEvents[i].isLooping) {
              // If this is not the last event, the next event might silence this one?
-            if (i + 1 != _lastEvent) {
+            if (i + 1 != _playbackLastEvent) {
                 // if that next event starts before the current audio
-                if (_soundEvents[i + 1].waveStart < _playbackIntervalStart) {
+                if (_soundEvents[i + 1].waveStartInSeconds < audioFrameStartInSeconds) {
                     ++_firstEvent;
                 } else {
                     // The next event starts after the current playback interval,
@@ -302,6 +296,9 @@ void PAPU::SquareWaveChannel::updateEventsQueue(const float audioFrameStartInSec
             break;
         }
     }
+    // We need to capture the state of the lastEvent member because the main thread may try
+    // to udpate that index while we are rendering audio.
+    _playbackLastEvent = _lastEvent;
 }
 
 void PAPU::SquareWaveChannel::writeByte(
