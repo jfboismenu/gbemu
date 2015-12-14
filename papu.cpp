@@ -346,6 +346,7 @@ void PAPU::SquareWaveChannel::writeByte(
             _nr12.bits.initialVolume
         );
         ++_lastEvent;
+        JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
     }
 }
 

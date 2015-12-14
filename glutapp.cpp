@@ -182,8 +182,27 @@ namespace {
 
     GLuint displayTexture;
 
+    void calcFPS()
+    {
+        typedef std::chrono::high_resolution_clock Clock;
+        typedef std::chrono::milliseconds milliseconds;
+
+        Clock::time_point now = Clock::now();
+        static Clock::time_point lastSecond = now;
+        static int nbFramesSinceLastSecond = 0;
+        ++nbFramesSinceLastSecond;
+
+        milliseconds elapsed = std::chrono::duration_cast<milliseconds>(now - lastSecond);        
+        if ( elapsed.count() > 1000 ) {
+            std::cout << "FPS: " << float(nbFramesSinceLastSecond) / elapsed.count() * 1000 << std::endl;
+            nbFramesSinceLastSecond = 0;
+            lastSecond = now;
+        }
+    }
+
     void render(void)
     {
+        calcFPS();
         const Color* pixels = gbInstance->getVideo().getPixels();
 
         glBindTexture(GL_TEXTURE_2D, displayTexture);
