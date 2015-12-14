@@ -29,6 +29,8 @@ namespace gbemu {
         PAPU( const Clock& clock );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
+
+        float getCurrentPlaybackTime() const;
     private:
         void renderAudioInternal(void* output, const unsigned long frameCount, const int rate);
 
@@ -231,6 +233,8 @@ namespace gbemu {
         Register< SoundOutputTerminalSelect > _nr51;
         Register< NR52bits, 0xFF, 0xF0 > _nr52;
 
+        int _rate;
+        int64_t _currentPlaybackTime;
         const Clock& _clock;
     };
 

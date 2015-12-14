@@ -163,6 +163,11 @@ unsigned char PAPU::readByte( unsigned short addr ) const
     return 0;
 }
 
+float PAPU::getCurrentPlaybackTime() const
+{
+    return float(_currentPlaybackTime) / _rate;
+}
+
 bool PAPU::isRegisterAvailable( const unsigned short addr ) const
 {
     // NR52 is always available. However, if it's off and we are accessing a non wave-pattern address, we can't access them.
@@ -171,12 +176,15 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
 
 void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, const int rate)
 {
-    static unsigned long currentTime(0);
-    float realTime(float(currentTime)/rate);
-    currentTime += frameCount;
+    _rate = rate;
+    float realTime(float(_currentPlaybackTime)/_rate);
+
+    JFX_LOG("audio lag: " << _clock.getTimeInSeconds() - realTime);
 
     _squareWaveChannel1.renderAudio(output, frameCount, rate, realTime);
     _squareWaveChannel2.renderAudio(output, frameCount, rate, realTime);
+
+    _currentPlaybackTime += frameCount;
 }
 
 PAPU::SquareWaveChannel::SquareWaveChannel(
