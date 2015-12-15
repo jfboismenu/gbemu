@@ -80,8 +80,6 @@ namespace gbemu {
             // Find out which tile this pixel falls into
             const unsigned short tileMapSlotAddr = tileMapStart + ( 32 * ( backgroundLine / 8 ) ) + ( backgroundPixel / 8 );
             JFX_CMP_ASSERT( tileMapSlotAddr, <, tileMapStart+ 0x400 );
-            JFX_CMP_ASSERT( tileMapSlotAddr, >=, 0 );
-            JFX_CMP_ASSERT( tileMapSlotAddr, <, 65536 );
 
             // Read the tile index from the tile map
             int tileIndex;

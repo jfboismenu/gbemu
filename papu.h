@@ -1,50 +1,39 @@
 #pragma once
 
 #include "register.h"
+#include <array>
 
 namespace gbemu {
 
-    class SoundChannel
-    {
-    public:
-        SoundChannel();
-        void writeSample( int time, short sample );
-        const short* getFirstHalf() const;
-        const short* getSecondHalf() const;
-        size_t getHalfSize() const;
-        size_t getSize() const;
-    private:
-        std::vector< short > _samples;
-        int _accumulator;
-    };
+    class Clock;
 
-    class Counter
+    template<int CycleLength>
+    class CyclicCounter
     {
     public:
-        Counter( int );
-        Counter& operator++();
-        bool hasOverflowed() const;
+        CyclicCounter(int count);
+        CyclicCounter& operator++();
+        CyclicCounter operator+(int i) const;
+        CyclicCounter operator-(int i) const;
+        bool operator!=(const CyclicCounter&) const;
+        bool operator==(const CyclicCounter&) const;
+        operator int() const;
     private:
         int _count;
-        int _length;
-        mutable bool _overflowed;
     };
-
 
     class PAPU
     {
     public:
-        typedef void (*SoundReadyCb)( const short* samples, int nbSamples, void* clientData );
-        PAPU( const int& clock );
+        static void renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData);
+        PAPU( const Clock& clock );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
-        void emulate( int nbCycles );
-        const SoundChannel& getSoundMix() const;
-        void registerSoundReadyCb(
-            SoundReadyCb cb,
-            void* clientData
-        );
+
+        float getCurrentPlaybackTime() const;
     private:
+        void renderAudioInternal(void* output, const unsigned long frameCount, const int rate);
+
         class NR52bits
         {
         public:
@@ -61,24 +50,28 @@ namespace gbemu {
         public:
             unsigned char _allSoundOn : 1;
         };
-        
+
         class FrequencyLoBits
         {
         public:
             unsigned char _freqLo;
         };
-        
+
         class FrequencyHiBits
         {
         public:
             unsigned char _freqHi : 3;
         private:
             unsigned char _unused : 3;
-        public:
             unsigned char _consecutive : 1;
+        public:
+            JFX_INLINE bool isLooping() const
+            {
+                return _consecutive == 0;
+            }
             unsigned char _initialize : 1;
         };
-        
+
         class SoundLengthWavePatternDutyBits
         {
         public:
@@ -97,23 +90,28 @@ namespace gbemu {
                         JFX_MSG_ASSERT( "Wave pattern duty invalid: " << wavePatternDuty );
                 }
             }
+            float getSoundLength() const
+            {
+                return (64 - soundLength) * (1.f / 256);
+            }
+        private:
             unsigned char soundLength : 6;
             unsigned char wavePatternDuty : 2;
         };
-        
+
         class SoundLengthBits : private SoundLengthWavePatternDutyBits
         {
         public:
             unsigned char getSoundLength()
             {
-                return soundLength;
+                return SoundLengthWavePatternDutyBits::getSoundLength();
             }
         };
-        
+
         class EnveloppeBits
         {
         public:
-            bool isAmplify() const
+            bool isAmplifying() const
             {
                 return _direction == 1;
             }
@@ -130,9 +128,9 @@ namespace gbemu {
             {
                 return initialVolume;
             }
-            bool isAmplify() const
+            bool isAmplifying() const
             {
-                return EnveloppeBits::isAmplify();
+                return EnveloppeBits::isAmplifying();
             }
         };
         class MainVolumeOutputControlBits
@@ -155,44 +153,89 @@ namespace gbemu {
             unsigned char channel3Left : 1;
             unsigned char channel4Left : 1;
         };
-        
+
         bool isRegisterAvailable( const unsigned short addr ) const;
 
         class SquareWaveChannel
         {
         public:
-            SquareWaveChannel( const int& clock );
+            SquareWaveChannel(
+                const Clock& clock,
+                unsigned short soundLengthRegisterAddr,
+                unsigned short evenloppeRegisterAddr,
+                unsigned short frequencyLowRegisterAddr,
+                unsigned short frequencyHiRegisterAddr
+            );
+            void renderAudio(void* output, const unsigned long frameCount, const int rate, const float realTime);
             void writeByte( unsigned short addr, unsigned char value );
             unsigned char readByte( unsigned short addr ) const;
-            void emulate( int nbCycles );
-            const SoundChannel& getSoundChannel() const;
         private:
-            bool isMuted() const;
-            SoundChannel                                           _channel;
+            void updateEventsQueue(const float audioFrameStartInSeconds);
+            void incrementFirstEventIndex();
+            struct SoundEvent
+            {
+                SoundEvent(
+                    bool pl,
+                    bool il,
+                    int64_t ws,
+                    float wsis,
+                    float wlis,
+                    int wf,
+                    float d,
+                    char v
+                );
+                SoundEvent() = default;
+                bool isPlaying;
+                bool isLooping;
+                int waveStart;
+                float waveStartInSeconds;
+                float waveLengthInSeconds;
+                int waveFrequency;
+                float waveDuty;
+                char waveVolume;
+                float waveEndInSeconds() const;
+            };
+
+            char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
+            short getGbNote() const;
+
             Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _nr11;
             Register< EnveloppeBits >                              _nr12;
             Register< FrequencyLoBits, 0x0, 0xFF >                 _nr13;
             Register< FrequencyHiBits, 0x40, 0XFF >                _nr14;
-            int                                                    _periodOneEight;
-            int                                                    _phase;
-            int                                                    _timeBeforeNextPhase;
-            int                                                    _soundLength;
-            const int&                                             _clock;
-        } _squareWaveChannel;
+            const Clock&                                           _clock;
+
+            unsigned short _soundLengthRegisterAddr;
+            unsigned short _evenloppeRegisterAddr;
+            unsigned short _frequencyLowRegisterAddr;
+            unsigned short _frequencyHiRegisterAddr;
+
+            enum {BUFFER_SIZE = 32};
+
+            std::array<SoundEvent, BUFFER_SIZE> _soundEvents;
+
+            using BufferIndex = CyclicCounter<BUFFER_SIZE>;
+
+            BufferIndex               _firstEvent;
+            BufferIndex               _lastEvent;
+            BufferIndex               _playbackLastEvent;
+
+        };
+
+        SquareWaveChannel  _squareWaveChannel1;
+        SquareWaveChannel  _squareWaveChannel2;
 
         Register< EnveloppeBits > _nr32;
         Register< SoundLengthBits, 0xB0, 0xFF > _nr41;
         Register< NoiseEnveloppeBits > _nr42;
-        
+
         Register< MainVolumeOutputControlBits > _nr50;
         Register< SoundOutputTerminalSelect > _nr51;
         Register< NR52bits, 0xFF, 0xF0 > _nr52;
 
-        SoundReadyCb _soundReadyCb;
-        void*        _clientData;
-
-        const int& _clock;
-//        Counter    _
+        int _rate;
+        int64_t _currentPlaybackTime;
+        const Clock& _clock;
     };
-    
+
 }

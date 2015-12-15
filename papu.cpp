@@ -1,73 +1,80 @@
 #include "papu.h"
 #include "registers.h"
 #include "common.h"
+#include "logger.h"
+#include "clock.h"
+#include "mutex.h"
 #include <iostream>
+
+namespace {
+    float gbNoteToFrequency(const int gbNote)
+    {
+        return 131072.f / (2048 - gbNote);
+    }
+
+    const int PLAY_FOREVER = 0x7fffffff;
+
+    gbemu::Mutex mutex;
+}
 
 namespace gbemu {
 
+template<int CycleLength>
+CyclicCounter<CycleLength>::CyclicCounter(const int count) :
+    _count(count % CycleLength)
+{}
 
-SoundChannel::SoundChannel() : _samples( ( 4 * 1024 * 1024 / 32 ) / 16, 0 ), _accumulator( 0 )
+template<int CycleLength>
+CyclicCounter<CycleLength>& CyclicCounter<CycleLength>::operator++()
 {
-}
-
-void SoundChannel::writeSample( int time, short sample )
-{
-    time %= _samples.size();
-    _accumulator += sample;
-    // If this is the last sample to accumulate
-    if ( ( time & 0xF ) == 0xF ) {
-        // Divide by 16
-        _accumulator >>= 4;
-        // Write the byte in the right slot
-        _samples[ static_cast< size_t >( time >> 4 ) ] =
-            static_cast< short >( _accumulator );
-        // Reset the accumulator
-        _accumulator = 0;
-    }
-}
-
-const short* SoundChannel::getFirstHalf() const
-{
-    return &_samples[0];
-}
-
-const short* SoundChannel::getSecondHalf() const
-{
-    return &_samples[ getHalfSize() ];
-}
-
-size_t SoundChannel::getHalfSize() const
-{
-    return _samples.size() / 2;
-}
-
-size_t SoundChannel::getSize() const
-{
-    return _samples.size();
-}
-
-Counter::Counter( int length ) : _length( length ), _count( 0 )
-{
-
-}
-
-Counter& Counter::operator++()
-{
-    ++_count;
-    if ( _count == _length ) {
-        _overflowed = true;
-        _count = 0;
-    }
-
+    _count = (_count + 1) % CycleLength;
     return *this;
 }
 
-bool Counter::hasOverflowed() const
+template<int CycleLength>
+CyclicCounter<CycleLength> CyclicCounter<CycleLength>::operator+(int i) const
 {
-    return _overflowed;
+    CyclicCounter<CycleLength> counter(*this);
+    counter._count = (counter._count + i) % CycleLength;
+    return counter;
 }
 
-PAPU::PAPU( const int& clock ) : _clock( clock ), _squareWaveChannel( clock )
+template<int CycleLength>
+CyclicCounter<CycleLength> CyclicCounter<CycleLength>::operator-(int i) const
+{
+    CyclicCounter<CycleLength> counter(*this);
+    counter._count = (counter._count - i) % CycleLength;
+    return counter;
+}
+
+template<int CycleLength>
+bool CyclicCounter<CycleLength>::operator!=(const CyclicCounter& that) const
+{
+    return _count != that._count;
+}
+
+template<int CycleLength>
+bool CyclicCounter<CycleLength>::operator==(const CyclicCounter& that) const
+{
+    return _count == that._count;
+}
+
+template<int CycleLength>
+CyclicCounter<CycleLength>::operator int() const
+{
+    return _count;
+}
+
+void PAPU::renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData)
+{
+    memset(output, 0, frameCount);
+    reinterpret_cast<PAPU*>(userData)->renderAudioInternal(output, frameCount, rate);
+}
+
+PAPU::PAPU( const Clock& clock ) : 
+    _clock( clock ),
+    _squareWaveChannel1( clock, kNR11, kNR12, kNR13, kNR14 ),
+    _squareWaveChannel2( clock, kNR21, kNR22, kNR23, kNR24 )
 {
 /*
     mr(kNR10) = 0x80;
@@ -91,24 +98,6 @@ PAPU::PAPU( const int& clock ) : _clock( clock ), _squareWaveChannel( clock )
 */
 }
 
-void PAPU::registerSoundReadyCb( SoundReadyCb cb, void* clientData )
-{
-    _soundReadyCb = cb;
-    _clientData = clientData;
-}
-
-void PAPU::emulate( int nbCycles )
-{
-    for ( int i = 0; i < nbCycles; ++i ) {
-        _squareWaveChannel.emulate( 1 );
-    }
-}
-
-const SoundChannel& PAPU::getSoundMix() const
-{
-    return _squareWaveChannel.getSoundChannel();
-}
-
 void PAPU::writeByte(
     const unsigned short addr,
     const unsigned char value
@@ -120,33 +109,36 @@ void PAPU::writeByte(
     }
     if ( addr == kNR52 ) {
         _nr52.write( value );
-//        std::cout << "All Sound Flag: " << ( _nr52.bits._allSoundOn ? "on" : "off" ) << std::endl;
+        // JFX_LOG("All Sound Flag: " << ( _nr52.bits._allSoundOn ? "on" : "off" ));
     }
     else if ( addr == 0xFF24 ) {
         _nr50.write( value );
-//        std::cout << "-----NR50-ff24-----" << std::endl;
-//        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToLeftTerminal == 1 ) << std::endl;
-//        std::cout << "left Main output level (volume)  :" << (int)_nr50.bits.leftMainOutputLevel << std::endl;
-//        std::cout << "Output Vin to left               :" << ( _nr50.bits.outputVinToRightTerminal == 1 ) << std::endl;
-//        std::cout << "right Main output level (volume) :" << (int)( _nr50.bits.leftMainOutputLevel ) << std::endl;
+        // JFX_LOG("-----NR50-ff24-----");
+        // JFX_LOG("Output Vin to left               :" << ( _nr50.bits.outputVinToLeftTerminal == 1 ));
+        // JFX_LOG("left Main output level (volume)  :" << (int)_nr50.bits.leftMainOutputLevel);
+        // JFX_LOG("Output Vin to left               :" << ( _nr50.bits.outputVinToRightTerminal == 1 ));
+        // JFX_LOG("right Main output level (volume) :" << (int)( _nr50.bits.leftMainOutputLevel ));
     }
     else if ( addr == 0xFF25 ) {
         _nr51.write( value );
-//        std::cout << "-----NR51-ff25-----" << std::endl;
-//        std::cout << "Channel 1 to right : " << ( _nr51.bits.channel1Right == 1 ) << std::endl;
-//        std::cout << "Channel 2 to right : " << ( _nr51.bits.channel2Right == 1 ) << std::endl;
-//        std::cout << "Channel 3 to right : " << ( _nr51.bits.channel3Right == 1 ) << std::endl;
-//        std::cout << "Channel 4 to right : " << ( _nr51.bits.channel4Right == 1 ) << std::endl;
-//        std::cout << "Channel 1 to left  : " << ( _nr51.bits.channel1Left == 1 ) << std::endl;
-//        std::cout << "Channel 2 to left  : " << ( _nr51.bits.channel2Left == 1 ) << std::endl;
-//        std::cout << "Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ) << std::endl;
-//        std::cout << "Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ) << std::endl;
+        // JFX_LOG("-----NR51-ff25-----");
+        // JFX_LOG("Channel 1 to right : " << ( _nr51.bits.channel1Right == 1 ));
+        // JFX_LOG("Channel 2 to right : " << ( _nr51.bits.channel2Right == 1 ));
+        // JFX_LOG("Channel 3 to right : " << ( _nr51.bits.channel3Right == 1 ));
+        // JFX_LOG("Channel 4 to right : " << ( _nr51.bits.channel4Right == 1 ));
+        // JFX_LOG("Channel 1 to left  : " << ( _nr51.bits.channel1Left == 1 ));
+        // JFX_LOG("Channel 2 to left  : " << ( _nr51.bits.channel2Left == 1 ));
+        // JFX_LOG("Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ));
+        // JFX_LOG("Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ));
     }
     else if ( addr == kNR11 || addr == kNR12 || addr == kNR13 || addr == kNR14 ) {
-        _squareWaveChannel.writeByte( addr, value );
+        _squareWaveChannel1.writeByte( addr, value );
+    }
+    else if ( addr == kNR21 || addr == kNR22 || addr == kNR23 || addr == kNR24 ) {
+        _squareWaveChannel2.writeByte( addr, value );
     }
     else {
-//        std::cout << "Untracked write at " << std::hex << addr << std::endl;
+//        JFX_LOG("Untracked write at " << std::hex << addr);
     }
 }
 
@@ -166,9 +158,14 @@ unsigned char PAPU::readByte( unsigned short addr ) const
         }
     }
     else {
-//        std::cout << "Untracked read at " << std::hex << addr << std::endl;
+//        JFX_LOG("Untracked read at " << std::hex << addr);
     }
     return 0;
+}
+
+float PAPU::getCurrentPlaybackTime() const
+{
+    return float(_currentPlaybackTime) / _rate;
 }
 
 bool PAPU::isRegisterAvailable( const unsigned short addr ) const
@@ -177,81 +174,217 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
     return addr == kNR52 || !( ( _nr52.bits._allSoundOn == 0 ) && ( 0xFF10 <= addr ) && ( addr <= 0xFF2F ) );
 }
 
-PAPU::SquareWaveChannel::SquareWaveChannel( const int& clock ) :
-    _clock( clock ),
-    _soundLength( 0 )
-{}
-
-const SoundChannel& PAPU::SquareWaveChannel::getSoundChannel() const
+void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, const int rate)
 {
-    return _channel;
+    _rate = rate;
+    float realTime(float(_currentPlaybackTime)/_rate);
+
+    JFX_LOG("audio lag: " << _clock.getTimeInSeconds() - realTime);
+
+    _squareWaveChannel1.renderAudio(output, frameCount, rate, realTime);
+    _squareWaveChannel2.renderAudio(output, frameCount, rate, realTime);
+
+    _currentPlaybackTime += frameCount;
 }
 
-void PAPU::SquareWaveChannel::emulate( const int nbCycles )
+PAPU::SquareWaveChannel::SquareWaveChannel(
+    const Clock& clock,
+    unsigned short soundLengthRegisterAddr,
+    unsigned short evenloppeRegisterAddr,
+    unsigned short frequencyLowRegisterAddr,
+    unsigned short frequencyHiRegisterAddr
+) :
+    _clock( clock ),
+    _firstEvent(0),
+    _lastEvent(0),
+    _playbackLastEvent(0),
+    _soundLengthRegisterAddr(soundLengthRegisterAddr),
+    _evenloppeRegisterAddr(evenloppeRegisterAddr),
+    _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
+    _frequencyHiRegisterAddr(frequencyHiRegisterAddr)
+{}
+
+char PAPU::SquareWaveChannel::computeSample(
+    float frequency,
+    float timeSinceNoteStart,
+    float duty
+) const
 {
-    static const int dutyCycle[] = { 1, 2, 4, 6 };
-    for ( int i = 0; i < nbCycles; ++i ) {
-        if ( isMuted() ) {
-            _channel.writeSample( _clock + i, 0 );
+    const float cycleLength = 1 / frequency;
+    // Compute how many times the sound has played, including fractions.
+    const float howManyTimes = timeSinceNoteStart / cycleLength;
+    // Compute how many times the sound has completely played.
+    const float howManyTimesCompleted = int(howManyTimes);
+    // Compute how far we are in the current cycle.
+    const float howManyInCurrent = howManyTimes - howManyTimesCompleted;
+    // SINE
+    // return sin(pos_in_cycle * 2 * M_PI) * 2;
+    // SQUARE
+    return howManyInCurrent < duty ? 1 : -1;
+}
+
+void PAPU::SquareWaveChannel::renderAudio(void* raw_output, const unsigned long frameCount, const int rate, const float realTime)
+{
+    char* output = reinterpret_cast<char*>(raw_output);
+    // Update the interval of sound we're about to produce
+    // Convert the start and end to seconds.
+    const float startInSeconds = realTime;
+    const float endInSeconds = realTime + (float(frameCount) / rate);
+    updateEventsQueue(startInSeconds);
+
+
+    const int cycleStart = startInSeconds * _clock.getRate();
+    const int cycleEnd = endInSeconds * _clock.getRate();
+
+    JFX_LOG_VAR(_clock.getTimeInSeconds() - realTime);
+
+    // Queue is empty, do not play anything.
+    if (_firstEvent == _playbackLastEvent) {
+        return;
+    }
+
+    BufferIndex currentEvent = _firstEvent;
+
+    for (unsigned long i = 0 ; i < frameCount; ++i) {
+        // Peneration of the loop.
+        const float depth = float(i) / frameCount;
+        // Compute the current cpu cycle.
+        const int currentCpuCycle = depth * (cycleEnd - cycleStart) + cycleStart;
+        // Compute the real time in seconds this sample will represent.
+        const float frameTimeInSeconds = realTime + (float(i) / rate);
+
+        // If there are no more events to process, play nothing.
+        if (currentEvent == _playbackLastEvent) {
+            break;
+        } else if (currentCpuCycle < _soundEvents[currentEvent].waveStart) {
+            // If we still haven't reached the first note, play nothing.
             continue;
         }
-        if ( _timeBeforeNextPhase == 0 ) {
-            _phase = ( _phase + 1 ) * 8;
+        if (_soundEvents[currentEvent].isPlaying) {
+            const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
+            output[i] += computeSample(_soundEvents[currentEvent].waveFrequency, timeSinceEventStart, _soundEvents[currentEvent].waveDuty) * _soundEvents[currentEvent].waveVolume;
         }
-        else if ( _phase < dutyCycle[ _nr11.bits.wavePatternDuty ] ) {
-            _channel.writeSample( _clock + i, -10000 );
-        }
-        else {
-            _channel.writeSample( _clock + i, 10000 );
-        }
-        --_timeBeforeNextPhase;
-        --_soundLength;
     }
 }
 
-bool PAPU::SquareWaveChannel::isMuted() const
+void PAPU::SquareWaveChannel::updateEventsQueue(
+    const float audioFrameStartInSeconds
+)
 {
-    return _soundLength == 0;
-}
+    MutexGuard g(mutex);
+    for (BufferIndex i = _firstEvent; i != _playbackLastEvent ; ++i) {
 
+        // If sound is looping and the end of that audio event is before this audio frame.
+        if (_soundEvents[i].isLooping) {
+             // If this is not the last event, the next event might silence this one?
+            if (i + 1 != _playbackLastEvent) {
+                // if that next event starts before the current audio
+                if (_soundEvents[i + 1].waveStartInSeconds < audioFrameStartInSeconds) {
+                    ++_firstEvent;
+                } else {
+                    // The next event starts after the current playback interval,
+                    // so we can assume that this sound event will play
+                    // in the current playback interval.
+                    break;
+                }
+            } else {
+                // This sound event is looping and is the last in the queue,
+                // so it is still playing.
+                break;
+            }
+        }
+        // Audio is not looping, so if the end of this event is before the
+        // section we want to render, skip it.
+        else if (_soundEvents[i].waveEndInSeconds() < audioFrameStartInSeconds) {
+            ++_firstEvent;
+        } else {
+            // The _firstEvent is still playing or hasn't started yet, so it
+            // follows logic that
+            // the ones after will also be playing, so we can break.
+            break;
+        }
+    }
+    // We need to capture the state of the lastEvent member because the main thread may try
+    // to udpate that index while we are rendering audio.
+    _playbackLastEvent = _lastEvent;
+}
 
 void PAPU::SquareWaveChannel::writeByte(
     const unsigned short addr,
     const unsigned char value
 )
 {
-    if ( addr == kNR11 ) {
+    if ( addr == _soundLengthRegisterAddr ) {
         _nr11.write( value );
-//        std::cout << "-----NR11-ff11-----" << std::endl;
-//        std::cout << "Wave pattern duty            : " << _nr11.bits.getWaveDutyPercentage() << std::endl;
-//        std::cout << "Length counter load register : " << (int)_nr11.bits.soundLength << std::endl;
+        JFX_LOG("-----NR11-ff11-----");
+        JFX_LOG("Wave pattern duty            : " << _nr11.bits.getWaveDutyPercentage());
+        JFX_LOG("Length counter load register : " << (int)_nr11.bits.getSoundLength());
     }
-    else if ( addr == kNR12 ) {
+    else if ( addr == _evenloppeRegisterAddr ) {
         _nr12.write( value );
-//        std::cout << "-----NR12-ff12-----" << std::endl;
-//        std::cout << "Initial channel volume       : " << (int)_nr12.bits.initialVolume << std::endl;
-//        std::cout << "Volume sweep direction       : " << ( _nr12.bits.isAmplify() ? "up" : "down" ) << std::endl;
-//        std::cout << "Length of each step          : " << (int)_nr12.bits.sweepLength << std::endl;
+        JFX_LOG("-----NR12-ff12-----");
+        JFX_LOG("Initial channel volume       : " << (int)_nr12.bits.initialVolume);
+        JFX_LOG("Volume sweep direction       : " << ( _nr12.bits.isAmplifying() ? "up" : "down" ));
+        JFX_LOG("Length of each step          : " << (int)_nr12.bits.sweepLength);
     }
-    else if ( addr == kNR13 ) {
+    else if ( addr == _frequencyLowRegisterAddr ) {
         _nr13.write( value );
-//        std::cout << "-----NR13-ff13-----" << std::endl;
-//        std::cout << "Frequency lo: " << (int)_nr13.bits._freqLo << std::endl;
+        JFX_LOG("-----NR13-ff13-----");
+        JFX_LOG("Frequency lo: " << (int)_nr13.bits._freqLo);
     }
-    else if ( addr == kNR14 ) {
+    else if ( addr == _frequencyHiRegisterAddr ) {
         _nr14.write( value );
-//        std::cout << "-----NR14-ff14-----" << std::endl;
-//        std::cout << "Frequency hi : " << (int)_nr14.bits._freqHi << std::endl;
-//        std::cout << "Consecutive  : " << ( _nr14.bits._consecutive == 0 ? "loop" : "play until NR21-length expires" ) << std::endl;
-//        std::cout << "Initialize?  : " << ( _nr14.bits._initialize == 1 ) << std::endl;
-//        std::cout << "Period       : " << _periodOneEight << std::endl;
+        JFX_LOG("-----NR14-ff14-----");
+        JFX_LOG("Frequency hi : " << (int)_nr14.bits._freqHi);
+        JFX_LOG("Consecutive  : " << ( _nr14.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
+        JFX_LOG("Initialize?  : " << ( _nr14.bits._initialize == 1 ));
 
-        if ( _nr14.bits._initialize ) {
-            _timeBeforeNextPhase = _periodOneEight = _nr13.bits._freqLo | ( _nr14.bits._freqHi << 8 );
-            _soundLength = ( 64 - _nr11.bits.soundLength ) * 4 * 1024 * 1024 / 256;
-            _phase = 0;
-        }
+        // Push a new sound event in a thread-safe manner.
+        MutexGuard g(mutex);
+        const int gbNote = getGbNote();
+        JFX_CMP_ASSERT(2048 - gbNote, >, 0);
+        _soundEvents[_lastEvent] = SoundEvent(
+            _nr14.bits._initialize == 1,
+            _nr14.bits.isLooping(),
+            _clock.getTimeInCycles(),
+            _clock.getTimeInSeconds(),
+            _nr11.bits.getSoundLength(),
+            gbNoteToFrequency(gbNote),
+            _nr11.bits.getWaveDutyPercentage(),
+            _nr12.bits.initialVolume
+        );
+        ++_lastEvent;
+        JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
     }
+}
+
+short PAPU::SquareWaveChannel::getGbNote() const
+{
+    return _nr13.bits._freqLo | ( _nr14.bits._freqHi << 8 );
+}
+
+PAPU::SquareWaveChannel::SoundEvent::SoundEvent(
+    bool ip,
+    bool il,
+    int64_t ws,
+    float wsis,
+    float wlis,
+    int wf,
+    float d,
+    char v
+) : isPlaying(ip),
+    isLooping(il),
+    waveStart(ws),
+    waveStartInSeconds(wsis),
+    waveLengthInSeconds(wlis),
+    waveFrequency(wf),
+    waveDuty(d),
+    waveVolume(v)
+{}
+
+float PAPU::SquareWaveChannel::SoundEvent::waveEndInSeconds() const
+{
+    return waveStartInSeconds + waveLengthInSeconds;
 }
 
 }

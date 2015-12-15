@@ -8,6 +8,7 @@
 #include "bootRom.h"
 #include "papu.h"
 #include "timers.h"
+#include "clock.h"
 
 namespace gbemu {
 
@@ -19,18 +20,18 @@ namespace gbemu {
 
         Memory& getMemory();
         CPU& getCPU();
+        PAPU& getPAPU();
         Cartridge& getCartridge();
         VideoDisplay& getVideo();
         DebugStringHandlerRegistry& getDebugRegistry();
+        const Clock& getClock() const;
         int doCycle();
-        void registerSoundReadyCb(
-            void (*callback)( const short* samples, int nbSamples ),
-            void* clientData
-        );
+
     private:
 
         void handleInterrupts();
 
+        Clock _clock;
         BootRom _bootRom;
         PAPU   _papu;
         Memory _memory;
@@ -39,7 +40,7 @@ namespace gbemu {
         DebugStringHandlerRegistry _debugReg;
         CPU _cpu;
         Timers _timers;
-        int _clock;
+        
         VideoDisplay _video;
     };
 }

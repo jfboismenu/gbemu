@@ -16,6 +16,7 @@
 #include <sstream>
 #include <memory>
 #include <fstream>
+#include <thread>
 
 #ifdef _WINDOWS
 #include <Windows.h>
@@ -36,6 +37,8 @@
 #include "videoDisplay.h"
 #include "gameboy.h"
 #include "gbemu.h"
+#include "logger.h"
+#include "audio.h"
 
 namespace {
 
@@ -76,7 +79,7 @@ namespace {
             glutPostRedisplay();
         }
     }
-    
+
     bool downPressed = false;
     bool upPressed = false;
     bool leftPressed = false;
@@ -85,7 +88,7 @@ namespace {
     bool startPressed = false;
     bool aPressed = false;
     bool bPressed = false;
-    
+
     void doButtons(
         const unsigned char key,
         const bool          setTo )
@@ -104,7 +107,7 @@ namespace {
             startPressed = setTo;
         }
     }
-    
+
     void doCross(
         const int  key,
         const bool setTo
@@ -123,7 +126,7 @@ namespace {
             downPressed = setTo;
         }
     }
-    
+
     void writeStateToMemory()
     {
         const unsigned char keyState = GetMask(
@@ -137,7 +140,7 @@ namespace {
             rightPressed ); // RIGHT
         gbInstance->getMemory().setKeyState( keyState );
     }
-    
+
     void keyboardDown(
         const unsigned char key,
         const int,
@@ -147,7 +150,7 @@ namespace {
         doButtons( key, true );
         writeStateToMemory();
     }
-    
+
     void keyboardUp(
         const unsigned char key,
         const int,
@@ -157,7 +160,7 @@ namespace {
         doButtons( key, false );
         writeStateToMemory();
     }
-    
+
     void specialDown(
         const int key,
         const int,
@@ -167,7 +170,7 @@ namespace {
         doCross( key, true );
         writeStateToMemory();
     }
-    
+
     void specialUp(
         const int key,
         const int,
@@ -180,33 +183,40 @@ namespace {
 
     GLuint displayTexture;
 
-    void render(void) 
+    void calcFPS()
     {
-        // emulation might be a faster than it should be
-        // in this case, complete the draw-emu cycle by sleeping a bit.
-//        static timeval t1;
-//        static bool firstFrame = true;
-//        double elapsedTime;
-//        
-//        const double fps = 60.;
-//
-//        if ( !firstFrame ) {
-//            timeval t2;
-//            gettimeofday(&t2, NULL);
-//            // compute and print the elapsed time in millisec
-//            elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
-//            elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
-//            
-//            const double timeToSleep = ( 1000.0 / fps ) - elapsedTime;
-//            if ( timeToSleep > 0 ) {
-//                usleep( static_cast< unsigned int >( timeToSleep * 1000 ) );
-//            }
-//        }
-//        // start timer
-//        gettimeofday(&t1, NULL);
-//        
-//        firstFrame = false;
-//        glClear( GL_COLOR_BUFFER_BIT );
+        typedef std::chrono::high_resolution_clock Clock;
+        typedef std::chrono::milliseconds milliseconds;
+
+        Clock::time_point now = Clock::now();
+        static Clock::time_point lastSecond = now;
+        static int nbFramesSinceLastSecond = 0;
+        ++nbFramesSinceLastSecond;
+
+        milliseconds elapsed = std::chrono::duration_cast<milliseconds>(now - lastSecond);        
+        if ( elapsed.count() > 1000 ) {
+            std::cout << "FPS: " << float(nbFramesSinceLastSecond) / elapsed.count() * 1000 << std::endl;
+            nbFramesSinceLastSecond = 0;
+            lastSecond = now;
+        }
+    }
+
+    void syncCpuWithAudio()
+    {
+        // If we are perforrming slower than audio at the moment, do not sleep!
+        if (gbInstance->getClock().getTimeInSeconds() < gbInstance->getPAPU().getCurrentPlaybackTime()) {
+            return;
+        }
+        typedef std::chrono::high_resolution_clock Clock;
+        typedef std::chrono::milliseconds milliseconds;
+        const int sleepTime = int((gbInstance->getClock().getTimeInSeconds() - gbInstance->getPAPU().getCurrentPlaybackTime()) * 1000);
+        std::cout << sleepTime << std::endl;
+        std::this_thread::sleep_for(milliseconds(sleepTime));
+    }
+
+    void render(void)
+    {
+        calcFPS();
         const Color* pixels = gbInstance->getVideo().getPixels();
 
         glBindTexture(GL_TEXTURE_2D, displayTexture);
@@ -222,7 +232,7 @@ namespace {
         JFX_CMP_ASSERT( glGetError(), ==, GL_NO_ERROR );
         glColor3f( 1, 1, 1 );
         glBegin( GL_QUADS );
-                
+        {
             glTexCoord2f( 0.f, 1.f );
             glVertex3f( -1.f, -1.f, 0.f );
 
@@ -234,67 +244,54 @@ namespace {
 
             glTexCoord2f( 0.f, 0.f );
             glVertex3f( -1.f, 1.f, 0.f );
-
+        }
         glEnd();
 
         glFlush();
-    }
-    
 
-    
-//    void staticUnitTest()
-//    {
-//        struct SweepTraits
-//        {
-//        public:
-//            bool isSweepingEnabled() const
-//            {
-//                return _time != 0 || _shift == 0;
-//            }
-//            unsigned char getTime() const
-//            {
-//                return _time;
-//            }
-//            bool isDecreasing() const
-//            {
-//                return _direction == 1;
-//            }
-//            unsigned char getShift() const
-//            {
-//                return _shift;
-//            }
-//        private:
-//            unsigned char _shift : 3;
-//            unsigned char _direction : 1;
-//            unsigned char _time : 3;
-//            unsigned char _unused : 1;
-//        };
-//        
-//        Register< SweepTraits > sweepRegister( GetMask( 1, 0, 1, 0, 1, 1, 1, 0 ) );
-//        assert( sweepRegister.bits.getTime() == 2 );
-//        assert( sweepRegister.bits.isDecreasing() );
-//        assert( sweepRegister.bits.getShift() == 6 );
-//        
-//        static_assert( sizeof( sweepRegister ) == 1, "Wrong size!" );
-//    }
+        syncCpuWithAudio();
+    }
 }
 
-/*#ifdef _WINDOWS
-int _tmain(int argc, char* argv[])
-#else*/
 int main(int argc, char* argv[])
-//#endif
 {
     if ( argc == 1 ) {
         std::cout << "Missing cartridge name" << std::endl;
         return 0;
     }
+
+    // Extract command line arguments
+    const char* cartPath(0);
+    const char* bootRomPath(0);
+    // we support some -- arguments and two positional arguments.
+    // -- arguments can be anywhere. Positional arguments are as follows:
+    // 1) name of cartridge
+    // 2) optional boot rom.
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--debug") {
+            Logger::enableLogger(true);
+        } else if (!cartPath) {
+            cartPath = argv[i];
+        } else if (!bootRomPath) {
+            bootRomPath = argv[i];
+        } else {
+            std::cout << "Unexpected argument:" << argv[i] << std::endl;
+            return -1;
+        }
+    }
+    // Create the emulator.
     std::unique_ptr< Gameboy > gbInstanceGuard(
-        gbemu::initGlobalEmulatorParams( argv[ 1 ], argc == 3 ? argv[ 2 ] : 0 ) );
+        gbemu::initGlobalEmulatorParams( cartPath, bootRomPath ) );
     gbInstance = gbInstanceGuard.get();
-    
+
+    Audio audio(
+        44100, &gbInstance->getPAPU(), gbInstance->getPAPU().renderAudio
+    );
+
+    // Dump some info about the game we're about to play.
     printCartridgeInfo( gbInstance->getCartridge() );
 
+    // Setup GLUT
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
     glutInitWindowPosition(1920/2,1200/2);
@@ -309,6 +306,9 @@ int main(int argc, char* argv[])
     glutKeyboardUpFunc( keyboardUp );
     glutSpecialFunc( specialDown );
     glutSpecialUpFunc( specialUp );
+
+    audio.start();
     glutMainLoop();
+    audio.stop();
 	return 0;
 }

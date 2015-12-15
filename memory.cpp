@@ -77,6 +77,7 @@ namespace gbemu {
             const unsigned char oneByte = _bootRom.readByte( addr );
             if ( _bootRom.getLastByteAddr() == addr ) {
                 _isBooting = false;
+//                exit(0);
             }
             return oneByte;
         }

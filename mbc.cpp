@@ -12,7 +12,7 @@
 
 namespace {
     using namespace gbemu;
-    
+
     class MBCBase : public MemoryBlockController
     {
     public:
@@ -22,7 +22,7 @@ namespace {
         ) : _rom( rom ),
             _ram( ram )
         {}
-        
+
         void writeRAMByte( int index, unsigned char value )
         {
             if ( getRAMSize() == 0 ) {
@@ -53,18 +53,18 @@ namespace {
         {
             return (int)_rom.size();
         }
-        
+
     private:
         std::vector< unsigned char >& _rom;
         std::vector< unsigned char >& _ram;
     };
-    
+
     class MBC1 : public MBCBase
     {
     public:
-    
+
         enum class Mode { _16_8, _4_32 };
-    
+
         MBC1(
             std::vector< unsigned char >& rom,
             std::vector< unsigned char >& ram
@@ -74,17 +74,17 @@ namespace {
             _romRamBits( 0 ),
             _externalRAMEnabled( false )
         {}
-    
+
         Type getType() const
         {
             return Type::MBC1;
         }
-        
+
         const char* getName() const
         {
             return "MBC1";
         }
-        
+
         virtual void writeByte(
             unsigned short addr,
             unsigned char value
@@ -122,7 +122,7 @@ namespace {
                 JFX_MSG_ASSERT( "Write at " << addr << " not supported for MBC1" );
             }
         }
-        
+
         virtual unsigned char readByte(
             unsigned short addr
         ) const
@@ -159,18 +159,18 @@ namespace {
                 JFX_MSG_ASSERT( "Reading at " << addr << " for MBC1 not supported." );
             }
         }
-        
+
     private:
         Mode _mode;
         int  _romRamBits;
         int  _lowerRomBankBits;
         bool _externalRAMEnabled;
     };
-    
+
     class MBC2 : public MBCBase
     {
     public:
-    
+
         MBC2(
             std::vector< unsigned char >& rom,
             std::vector< unsigned char >& ram
@@ -178,17 +178,17 @@ namespace {
             _romBankIndex( 0 ),
             _externalRAMEnabled( false )
         {}
-    
+
         Type getType() const
         {
             return Type::MBC2;
         }
-        
+
         const char* getName() const
         {
             return "MBC2";
         }
-        
+
         virtual void writeByte(
             unsigned short addr,
             unsigned char value
@@ -212,7 +212,7 @@ namespace {
                 JFX_MSG_ASSERT( "Write at " << addr << " not supported for MBC2" );
             }
         }
-        
+
         virtual unsigned char readByte(
             unsigned short addr
         ) const
@@ -236,12 +236,12 @@ namespace {
                 JFX_MSG_ASSERT( "Reading at " << addr << " for MBC2 not supported." );
             }
         }
-        
+
     private:
         int  _romBankIndex;
         bool _externalRAMEnabled;
     };
-    
+
     class NoMBC : public MBCBase
     {
     public:
@@ -250,7 +250,7 @@ namespace {
             std::vector< unsigned char >& ram
         ) : MBCBase( rom, ram )
         {}
-        
+
         Type getType() const
         {
             return Type::None;
@@ -314,7 +314,7 @@ namespace gbemu {
             case Cartridge::kROM_MBC3_RAM_BATT:
             case Cartridge::kROM_MBC3_TIMER_BATT:
             case Cartridge::kROM_MBC3_TIMER_RAM_BATT:
-                
+
             case Cartridge::kROM_MBC5:
             case Cartridge::kROM_MBC5_RAM:
             case Cartridge::kROM_MBC5_RAM_BATT:
