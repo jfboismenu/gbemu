@@ -209,7 +209,6 @@ namespace {
         typedef std::chrono::high_resolution_clock Clock;
         typedef std::chrono::milliseconds milliseconds;
         const int sleepTime = int((gbInstance->getClock().getTimeInSeconds() - gbInstance->getPAPU().getCurrentPlaybackTime()) * 1000);
-        std::cout << sleepTime << std::endl;
         std::this_thread::sleep_for(milliseconds(sleepTime));
     }
 
