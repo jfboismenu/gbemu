@@ -1,11 +1,11 @@
 #pragma once
 
-#include "common.h"
+#include <common/common.h">
 
 namespace gbemu
 {
     enum IORegister {
-        
+
         kP1 = 0xFF00, // joypad info
         kSB = 0xFF01, // serial transfer data
         kSC = 0xFF02, // serial transfer control
@@ -43,7 +43,7 @@ namespace gbemu
 
         kLCDC = 0xFF40,
         kSTAT = 0xFF41,
-        
+
         kSCX = 0xFF43,
         kSCY = 0xFF42,
 
@@ -58,7 +58,7 @@ namespace gbemu
 
         kWY = 0xFF4A,
         kWX = 0xFF4B,
-        
+
         kIE = 0xFFFF,
     };
     enum WordRegister {
@@ -92,7 +92,7 @@ namespace gbemu
         Registers();
 
         unsigned char _A;
-        
+
         bool _zero;
         bool _halfCarry;
         bool _carry;
@@ -126,7 +126,7 @@ namespace gbemu
         JFX_INLINE unsigned short AF() const;
         JFX_INLINE void AF( unsigned short af );
     };
-    
+
     unsigned short Registers::AF() const
     {
         return (unsigned short)(( _A << 8 ) | ( _zero << 7 ) | ( _substract << 6 ) | ( _halfCarry << 5 ) | ( _carry << 4 ));

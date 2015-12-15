@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include <common/common.h>
 
 namespace gbemu
 {
@@ -12,7 +12,7 @@ namespace gbemu
         kJP = 0xC3,
         JP_MHL = 0xe9,
 
-        DAA = 0x27, 
+        DAA = 0x27,
 
         JP_NZ_nn = 0xC2,
         JP_Z_nn = 0xCA,
@@ -27,9 +27,9 @@ namespace gbemu
         kXOR_E = 0xAB,
         kXOR_H = 0xAC,
         kXOR_L = 0xAD,
-        kXOR_HL = 0xAE, 
+        kXOR_HL = 0xAE,
         kXOR_STAR = 0xEE,
-        
+
         // 8-bit loads
         LD_A_n = 0x3e,
         LD_B_n = 0x06,
@@ -212,10 +212,10 @@ namespace gbemu
         LD_SP_HL = 0xF9,
 
         LDH_n_A = 0xe0,
-        LDH_A_n = 0xf0, 
+        LDH_A_n = 0xf0,
 
         LD_FF00_C_A = 0xe2,
-        LD_A_FF00_C = 0xf2, 
+        LD_A_FF00_C = 0xf2,
 
         BIT_0_A = 0xcb47,
         BIT_0_B = 0xcb40,
@@ -243,7 +243,7 @@ namespace gbemu
         BIT_2_H = 0xcb54,
         BIT_2_L = 0xcb55,
         BIT_2_HL = 0xcb56,
-        
+
         BIT_3_A = 0xcb5f,
         BIT_3_B = 0xcb58,
         BIT_3_C = 0xcb59,
@@ -252,7 +252,7 @@ namespace gbemu
         BIT_3_H = 0xcb5c,
         BIT_3_L = 0xcb5d,
         BIT_3_HL = 0xcb5e,
-        
+
         BIT_4_A = 0xcb67,
         BIT_4_B = 0xcb60,
         BIT_4_C = 0xcb61,
@@ -261,7 +261,7 @@ namespace gbemu
         BIT_4_H = 0xcb64,
         BIT_4_L = 0xcb65,
         BIT_4_HL = 0xcb66,
-        
+
         BIT_5_A = 0xcb6f,
         BIT_5_B = 0xcb68,
         BIT_5_C = 0xcb69,
@@ -270,7 +270,7 @@ namespace gbemu
         BIT_5_H = 0xcb6c,
         BIT_5_L = 0xcb6d,
         BIT_5_HL = 0xcb6e,
-        
+
         BIT_6_A = 0xcb77,
         BIT_6_B = 0xcb70,
         BIT_6_C = 0xcb71,
@@ -279,7 +279,7 @@ namespace gbemu
         BIT_6_H = 0xcb74,
         BIT_6_L = 0xcb75,
         BIT_6_HL = 0xcb76,
-        
+
         BIT_7_A = 0xcb7f,
         BIT_7_B = 0xcb78,
         BIT_7_C = 0xcb79,
@@ -315,7 +315,7 @@ namespace gbemu
         RES_2_H =  0xcb94,
         RES_2_L =  0xcb95,
         RES_2_HL = 0xcb96,
-        
+
         RES_3_A =  0xcb9f,
         RES_3_B =  0xcb98,
         RES_3_C =  0xcb99,
@@ -324,7 +324,7 @@ namespace gbemu
         RES_3_H =  0xcb9c,
         RES_3_L =  0xcb9d,
         RES_3_HL = 0xcb9e,
-        
+
         RES_4_A =  0xcba7,
         RES_4_B =  0xcba0,
         RES_4_C =  0xcba1,
@@ -333,7 +333,7 @@ namespace gbemu
         RES_4_H =  0xcba4,
         RES_4_L =  0xcba5,
         RES_4_HL = 0xcba6,
-                       
+
         RES_5_A =  0xcbaf,
         RES_5_B =  0xcba8,
         RES_5_C =  0xcba9,
@@ -342,7 +342,7 @@ namespace gbemu
         RES_5_H =  0xcbac,
         RES_5_L =  0xcbad,
         RES_5_HL = 0xcbae,
-        
+
         RES_6_A =  0xcbb7,
         RES_6_B =  0xcbb0,
         RES_6_C =  0xcbb1,
@@ -351,7 +351,7 @@ namespace gbemu
         RES_6_H =  0xcbb4,
         RES_6_L =  0xcbb5,
         RES_6_HL = 0xcbb6,
-                       
+
         RES_7_A =  0xcbbf,
         RES_7_B =  0xcbb8,
         RES_7_C =  0xcbb9,
@@ -369,7 +369,7 @@ namespace gbemu
         SET_0_H = 0xcbc4,
         SET_0_L = 0xcbc5,
         SET_0_HL = 0xcbc6,
-        
+
         SET_1_A = 0xcbcf,
         SET_1_B = 0xcbc8,
         SET_1_C = 0xcbc9,
@@ -378,7 +378,7 @@ namespace gbemu
         SET_1_H = 0xcbcc,
         SET_1_L = 0xcbcd,
         SET_1_HL = 0xcbce,
-        
+
         SET_2_A = 0xcbd7,
         SET_2_B = 0xcbd0,
         SET_2_C = 0xcbd1,
@@ -387,7 +387,7 @@ namespace gbemu
         SET_2_H = 0xcbd4,
         SET_2_L = 0xcbd5,
         SET_2_HL = 0xcbd6,
-        
+
         SET_3_A = 0xcbdf,
         SET_3_B = 0xcbd8,
         SET_3_C = 0xcbd9,
@@ -396,7 +396,7 @@ namespace gbemu
         SET_3_H = 0xcbdc,
         SET_3_L = 0xcbdd,
         SET_3_HL = 0xcbde,
-        
+
         SET_4_A = 0xcbe7,
         SET_4_B = 0xcbe0,
         SET_4_C = 0xcbe1,
@@ -405,7 +405,7 @@ namespace gbemu
         SET_4_H = 0xcbe4,
         SET_4_L = 0xcbe5,
         SET_4_HL = 0xcbe6,
-        
+
         SET_5_A = 0xcbef,
         SET_5_B = 0xcbe8,
         SET_5_C = 0xcbe9,
@@ -414,7 +414,7 @@ namespace gbemu
         SET_5_H = 0xcbec,
         SET_5_L = 0xcbed,
         SET_5_HL = 0xcbee,
-        
+
         SET_6_A = 0xcbf7,
         SET_6_B = 0xcbf0,
         SET_6_C = 0xcbf1,
@@ -423,7 +423,7 @@ namespace gbemu
         SET_6_H = 0xcbf4,
         SET_6_L = 0xcbf5,
         SET_6_HL = 0xcbf6,
-        
+
         SET_7_A = 0xcbff,
         SET_7_B = 0xcbf8,
         SET_7_C = 0xcbf9,
@@ -483,7 +483,7 @@ namespace gbemu
         PUSH_BC = 0xC5,
         PUSH_DE = 0xD5,
         PUSH_HL = 0xE5,
-        
+
         POP_AF = 0xF1,
         POP_BC = 0xC1,
         POP_DE = 0xD1,

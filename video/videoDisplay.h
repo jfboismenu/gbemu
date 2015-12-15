@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include "common.h"
+#include <common/common.h>
 
 namespace gbemu {
 

@@ -1,5 +1,5 @@
-#include "timers.h"
-#include "memory.h"
+#include <cpu/timers.h>
+#include <memory/memory.h>
 
 
 namespace gbemu {

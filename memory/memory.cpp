@@ -1,10 +1,10 @@
-#include "memory.h"
-#include "cartridgeInfo.h"
-#include "mbc.h"
-#include "bootRom.h"
-#include "papu.h"
-#include "videoDisplay.h"
-#include "timers.h"
+#include <memory/memory.h>
+#include <memory/cartridgeInfo.h>
+#include <memory/mbc.h>
+#include <memory/bootRom.h>
+#include <audio/papu.h>
+#include <video/videoDisplay.h>
+#include <cpu/timers.h>
 #include <memory>
 
 namespace gbemu {
@@ -40,7 +40,7 @@ namespace gbemu {
     {
         return 0x4000;
     }
-    
+
     Memory::Memory(
         const BootRom& bootRom,
         VideoDisplay&  videoDisplay,
@@ -95,7 +95,7 @@ namespace gbemu {
         }
         return _bytes[ addr ];
     }
-    
+
     unsigned char& Memory::memoryRegister( unsigned short addr )
     {
         return _bytes[ addr ];
@@ -146,7 +146,7 @@ P13-------O-Down-----O-Start ---- bit 3
                 if ( !getBit( value, 5 ) ) {
                     _bytes[ kP1 ] = 0xc0 | ( value & 0x30 ) | ( ( ~_keyState >> 4 ) & 0x0F );
                 }
-                
+
             }
             else if ( addr == kSB ) {
                 _bytes[ addr ] = value;

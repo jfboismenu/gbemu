@@ -1,9 +1,9 @@
-#include "papu.h"
-#include "registers.h"
-#include "common.h"
-#include "logger.h"
-#include "clock.h"
-#include "mutex.h"
+#include <audio/papu.h>
+#include <cpu/registers.h>
+#include <common/common.h>
+#include <base/logger.h>
+#include <base/clock.h>
+#include <base/mutex.h>
 #include <iostream>
 
 namespace {

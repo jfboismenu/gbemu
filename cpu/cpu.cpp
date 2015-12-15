@@ -1,6 +1,6 @@
-#include "cpu.h"
-#include "cartridgeInfo.h"
-#include "memory.h"
+#include <cpu/cpu.h>
+#include <memory/cartridgeInfo.h>
+#include <memory/memory.h>
 #include <iostream>
 
 namespace gbemu {
@@ -80,7 +80,7 @@ namespace gbemu {
             return static_cast< Opcode >( opcode );
         }
     }
-    
+
     int CPU::previewInstructionTiming() const
     {
         const Opcode opcode = previewOpcode();
@@ -203,9 +203,9 @@ namespace gbemu {
             case JR_NZ_n: jr_cc_n( !_zero ); break;
             case JR_Z_n: jr_cc_n( _zero ); break;
             case JR_NC_n: jr_cc_n( !_carry ); break;
-            case JR_C_n: jr_cc_n( _carry ); break; 
+            case JR_C_n: jr_cc_n( _carry ); break;
 
-            case JR_n: jr_n(); break; 
+            case JR_n: jr_n(); break;
 
             case JP_MHL: jp_hl(); break;
 
@@ -224,61 +224,61 @@ namespace gbemu {
             case OR_HL: or_n( _memory.readByte( _HL.word ) );break;
             case OR_STAR: or_n( readPCByte() ); break;
 
-            case LD_A_A:  ld_r1_r2( _A, _A ); break; 
-            case LD_A_B:  ld_r1_r2( _A, _BC.b ); break; 
-            case LD_A_C:  ld_r1_r2( _A, _BC.c ); break; 
-            case LD_A_D:  ld_r1_r2( _A, _DE.d ); break; 
-            case LD_A_E:  ld_r1_r2( _A, _DE.e ); break; 
-            case LD_A_H:  ld_r1_r2( _A, _HL.h ); break; 
-            case LD_A_L:  ld_r1_r2( _A, _HL.l ); break; 
+            case LD_A_A:  ld_r1_r2( _A, _A ); break;
+            case LD_A_B:  ld_r1_r2( _A, _BC.b ); break;
+            case LD_A_C:  ld_r1_r2( _A, _BC.c ); break;
+            case LD_A_D:  ld_r1_r2( _A, _DE.d ); break;
+            case LD_A_E:  ld_r1_r2( _A, _DE.e ); break;
+            case LD_A_H:  ld_r1_r2( _A, _HL.h ); break;
+            case LD_A_L:  ld_r1_r2( _A, _HL.l ); break;
 
-            case LD_A_HL: ld_r1_r2( _A, _memory.readByte( _HL.word ) ); break; 
+            case LD_A_HL: ld_r1_r2( _A, _memory.readByte( _HL.word ) ); break;
 
-            case LD_A_BC: ld_a_n( _memory.readByte( _BC.word ) ); break; 
-            case LD_A_DE: ld_a_n( _memory.readByte( _DE.word ) ); break; 
-            case LD_A_nn: ld_a_n( _memory.readByte( readPCWord() ) ); break; 
+            case LD_A_BC: ld_a_n( _memory.readByte( _BC.word ) ); break;
+            case LD_A_DE: ld_a_n( _memory.readByte( _DE.word ) ); break;
+            case LD_A_nn: ld_a_n( _memory.readByte( readPCWord() ) ); break;
 
-            case LD_B_B:  ld_r1_r2( _BC.b, _BC.b ); break; 
-            case LD_B_C:  ld_r1_r2( _BC.b, _BC.c ); break; 
-            case LD_B_D:  ld_r1_r2( _BC.b, _DE.d ); break; 
-            case LD_B_E:  ld_r1_r2( _BC.b, _DE.e ); break; 
-            case LD_B_H:  ld_r1_r2( _BC.b, _HL.h ); break; 
-            case LD_B_L:  ld_r1_r2( _BC.b, _HL.l ); break; 
+            case LD_B_B:  ld_r1_r2( _BC.b, _BC.b ); break;
+            case LD_B_C:  ld_r1_r2( _BC.b, _BC.c ); break;
+            case LD_B_D:  ld_r1_r2( _BC.b, _DE.d ); break;
+            case LD_B_E:  ld_r1_r2( _BC.b, _DE.e ); break;
+            case LD_B_H:  ld_r1_r2( _BC.b, _HL.h ); break;
+            case LD_B_L:  ld_r1_r2( _BC.b, _HL.l ); break;
             case LD_B_HL: ld_r1_r2( _BC.b, _memory.readByte( _HL.word ) ); break;
-            case LD_C_B:  ld_r1_r2( _BC.c, _BC.b ); break; 
-            case LD_C_C:  ld_r1_r2( _BC.c, _BC.c ); break; 
-            case LD_C_D:  ld_r1_r2( _BC.c, _DE.d ); break; 
-            case LD_C_E:  ld_r1_r2( _BC.c, _DE.e ); break; 
-            case LD_C_H:  ld_r1_r2( _BC.c, _HL.h ); break; 
-            case LD_C_L:  ld_r1_r2( _BC.c, _HL.l ); break; 
+            case LD_C_B:  ld_r1_r2( _BC.c, _BC.b ); break;
+            case LD_C_C:  ld_r1_r2( _BC.c, _BC.c ); break;
+            case LD_C_D:  ld_r1_r2( _BC.c, _DE.d ); break;
+            case LD_C_E:  ld_r1_r2( _BC.c, _DE.e ); break;
+            case LD_C_H:  ld_r1_r2( _BC.c, _HL.h ); break;
+            case LD_C_L:  ld_r1_r2( _BC.c, _HL.l ); break;
             case LD_C_HL: ld_r1_r2( _BC.c, _memory.readByte( _HL.word ) ); break;
-            case LD_D_B:  ld_r1_r2( _DE.d, _BC.b ); break; 
-            case LD_D_C:  ld_r1_r2( _DE.d, _BC.c ); break; 
-            case LD_D_D:  ld_r1_r2( _DE.d, _DE.d ); break; 
-            case LD_D_E:  ld_r1_r2( _DE.d, _DE.e ); break; 
-            case LD_D_H:  ld_r1_r2( _DE.d, _HL.h ); break; 
-            case LD_D_L:  ld_r1_r2( _DE.d, _HL.l ); break; 
+            case LD_D_B:  ld_r1_r2( _DE.d, _BC.b ); break;
+            case LD_D_C:  ld_r1_r2( _DE.d, _BC.c ); break;
+            case LD_D_D:  ld_r1_r2( _DE.d, _DE.d ); break;
+            case LD_D_E:  ld_r1_r2( _DE.d, _DE.e ); break;
+            case LD_D_H:  ld_r1_r2( _DE.d, _HL.h ); break;
+            case LD_D_L:  ld_r1_r2( _DE.d, _HL.l ); break;
             case LD_D_HL: ld_r1_r2( _DE.d, _memory.readByte( _HL.word ) ); break;
-            case LD_E_B:  ld_r1_r2( _DE.e, _BC.b ); break; 
-            case LD_E_C:  ld_r1_r2( _DE.e, _BC.c ); break; 
-            case LD_E_D:  ld_r1_r2( _DE.e, _DE.d ); break; 
-            case LD_E_E:  ld_r1_r2( _DE.e, _DE.e ); break; 
-            case LD_E_H:  ld_r1_r2( _DE.e, _HL.h ); break; 
-            case LD_E_L:  ld_r1_r2( _DE.e, _HL.l ); break; 
+            case LD_E_B:  ld_r1_r2( _DE.e, _BC.b ); break;
+            case LD_E_C:  ld_r1_r2( _DE.e, _BC.c ); break;
+            case LD_E_D:  ld_r1_r2( _DE.e, _DE.d ); break;
+            case LD_E_E:  ld_r1_r2( _DE.e, _DE.e ); break;
+            case LD_E_H:  ld_r1_r2( _DE.e, _HL.h ); break;
+            case LD_E_L:  ld_r1_r2( _DE.e, _HL.l ); break;
             case LD_E_HL: ld_r1_r2( _DE.e, _memory.readByte( _HL.word ) ); break;
-            case LD_H_B:  ld_r1_r2( _HL.h, _BC.b ); break; 
-            case LD_H_C:  ld_r1_r2( _HL.h, _BC.c ); break; 
-            case LD_H_D:  ld_r1_r2( _HL.h, _DE.d ); break; 
-            case LD_H_E:  ld_r1_r2( _HL.h, _DE.e ); break; 
-            case LD_H_H:  ld_r1_r2( _HL.h, _HL.h ); break; 
-            case LD_H_L:  ld_r1_r2( _HL.h, _HL.l ); break; 
+            case LD_H_B:  ld_r1_r2( _HL.h, _BC.b ); break;
+            case LD_H_C:  ld_r1_r2( _HL.h, _BC.c ); break;
+            case LD_H_D:  ld_r1_r2( _HL.h, _DE.d ); break;
+            case LD_H_E:  ld_r1_r2( _HL.h, _DE.e ); break;
+            case LD_H_H:  ld_r1_r2( _HL.h, _HL.h ); break;
+            case LD_H_L:  ld_r1_r2( _HL.h, _HL.l ); break;
             case LD_H_HL: ld_r1_r2( _HL.h, _memory.readByte( _HL.word ) ); break;
-            case LD_L_B:  ld_r1_r2( _HL.l, _BC.b ); break; 
-            case LD_L_C:  ld_r1_r2( _HL.l, _BC.c ); break; 
-            case LD_L_D:  ld_r1_r2( _HL.l, _DE.d ); break; 
-            case LD_L_E:  ld_r1_r2( _HL.l, _DE.e ); break; 
-            case LD_L_H:  ld_r1_r2( _HL.l, _HL.h ); break; 
-            case LD_L_L:  ld_r1_r2( _HL.l, _HL.l ); break; 
+            case LD_L_B:  ld_r1_r2( _HL.l, _BC.b ); break;
+            case LD_L_C:  ld_r1_r2( _HL.l, _BC.c ); break;
+            case LD_L_D:  ld_r1_r2( _HL.l, _DE.d ); break;
+            case LD_L_E:  ld_r1_r2( _HL.l, _DE.e ); break;
+            case LD_L_H:  ld_r1_r2( _HL.l, _HL.h ); break;
+            case LD_L_L:  ld_r1_r2( _HL.l, _HL.l ); break;
             case LD_L_HL: ld_r1_r2( _HL.l, _memory.readByte( _HL.word ) ); break;
             case LD_HL_B: ld_hl_r2( _BC.b ); break;
             case LD_HL_C: ld_hl_r2( _BC.c ); break;
@@ -489,7 +489,7 @@ namespace gbemu {
             case LDH_A_n: ldh_a_n(); break;
 
             case CALL_nn: call_nn(); break;
-            
+
             case CALL_NZ_nn: call_cc_nn( !_zero ); break;
             case CALL_Z_nn: call_cc_nn( _zero ); break;
             case CALL_NC_nn: call_cc_nn( !_carry ); break;
@@ -514,7 +514,7 @@ namespace gbemu {
             case POP_DE: pop_nn( _DE.word ); break;
             case POP_HL: pop_nn( _HL.word ); break;
 
-            case RRCA: rrc_n( _A, false ); break; 
+            case RRCA: rrc_n( _A, false ); break;
             case RRC_A: rrc_n( _A ); break;
             case RRC_B: rrc_n( _BC.b ); break;
             case RRC_C: rrc_n( _BC.c ); break;
@@ -545,14 +545,14 @@ namespace gbemu {
             case RL_HL: rl_mhl(); break;
 
             case RLCA: rlc_n( _A, false ); break;
-            case RLC_A: rlc_n( _A ); break; 
-            case RLC_B: rlc_n( _BC.b ); break; 
-            case RLC_C: rlc_n( _BC.c ); break; 
-            case RLC_D: rlc_n( _DE.d ); break; 
-            case RLC_E: rlc_n( _DE.e ); break; 
-            case RLC_H: rlc_n( _HL.h ); break; 
-            case RLC_L: rlc_n( _HL.l ); break; 
-            case RLC_MHL: rlc_mhl(); break; 
+            case RLC_A: rlc_n( _A ); break;
+            case RLC_B: rlc_n( _BC.b ); break;
+            case RLC_C: rlc_n( _BC.c ); break;
+            case RLC_D: rlc_n( _DE.d ); break;
+            case RLC_E: rlc_n( _DE.e ); break;
+            case RLC_H: rlc_n( _HL.h ); break;
+            case RLC_L: rlc_n( _HL.l ); break;
+            case RLC_MHL: rlc_mhl(); break;
 
             case SRL_A: srl_n( _A ); break;
             case SRL_B: srl_n( _BC.b ); break;
@@ -593,7 +593,7 @@ namespace gbemu {
             case CP_HL: cp_n( _memory.readByte( _HL.word ) ); break;
             case CP_N: cp_n( readPCByte() ); break;
 
-            case AND_A: and_n( _A ); break; 
+            case AND_A: and_n( _A ); break;
             case AND_B: and_n( _BC.b ); break;
             case AND_C: and_n( _BC.c ); break;
             case AND_D: and_n( _DE.d ); break;
@@ -613,13 +613,13 @@ namespace gbemu {
             case SWAP_L: swap_n( _HL.l ); break;
             case SWAP_MHL: swap_mhl(); break;
 
-            case ADD_A: add_n( _A ); break; 
-            case ADD_B: add_n( _BC.b ); break; 
-            case ADD_C: add_n( _BC.c ); break; 
-            case ADD_D: add_n( _DE.d ); break; 
-            case ADD_E: add_n( _DE.e ); break; 
-            case ADD_H: add_n( _HL.h ); break; 
-            case ADD_L: add_n( _HL.l ); break; 
+            case ADD_A: add_n( _A ); break;
+            case ADD_B: add_n( _BC.b ); break;
+            case ADD_C: add_n( _BC.c ); break;
+            case ADD_D: add_n( _DE.d ); break;
+            case ADD_E: add_n( _DE.e ); break;
+            case ADD_H: add_n( _HL.h ); break;
+            case ADD_L: add_n( _HL.l ); break;
             case ADD_MHL: add_n( _memory.readByte( _HL.word ) ); break;
             case ADD_N: add_n( readPCByte() ); break;
 
@@ -650,13 +650,13 @@ namespace gbemu {
             case SBC_A_MHL: sbc_a_n( _memory.readByte( _HL.word ) ); break;
             case SBC_A_n: sbc_a_n( readPCByte() ); break;
 
-            case SUB_A: sub_n( _A ); break; 
-            case SUB_B: sub_n( _BC.b ); break; 
-            case SUB_C: sub_n( _BC.c ); break; 
-            case SUB_D: sub_n( _DE.d ); break; 
-            case SUB_E: sub_n( _DE.e ); break; 
-            case SUB_H: sub_n( _HL.h ); break; 
-            case SUB_L: sub_n( _HL.l ); break; 
+            case SUB_A: sub_n( _A ); break;
+            case SUB_B: sub_n( _BC.b ); break;
+            case SUB_C: sub_n( _BC.c ); break;
+            case SUB_D: sub_n( _DE.d ); break;
+            case SUB_E: sub_n( _DE.e ); break;
+            case SUB_H: sub_n( _HL.h ); break;
+            case SUB_L: sub_n( _HL.l ); break;
             case SUB_MHL: sub_n( _memory.readByte( _HL.word ) ); break;
             case SUB_N: sub_n( readPCByte() ); break;
 
@@ -673,7 +673,7 @@ namespace gbemu {
         }
     }
 
-    void CPU::JP_nn() 
+    void CPU::JP_nn()
     {
         _PC = readPCWord();
     }
@@ -689,7 +689,7 @@ namespace gbemu {
     {
         reg = readPCByte();
     }
-        
+
     void CPU::ld_r_nn( unsigned short& reg )
     {
         reg = readPCWord();
@@ -817,8 +817,8 @@ namespace gbemu {
         _memory.writeByte( _HL.word, value );
     }
 
-    void CPU::ld_r1_r2( 
-        unsigned char& r1, unsigned char value 
+    void CPU::ld_r1_r2(
+        unsigned char& r1, unsigned char value
     )
     {
         r1 = value;
@@ -828,7 +828,7 @@ namespace gbemu {
     {
         _A = value;
     }
-    
+
     void CPU::ld_hl_r2( unsigned char value )
     {
         _memory.writeByte( _HL.word, value );
@@ -910,7 +910,7 @@ namespace gbemu {
     {
         ret();
         _interruptState = kEnabled;
-    }   
+    }
 
     void CPU::ret_cc( bool flag )
     {
@@ -999,7 +999,7 @@ namespace gbemu {
         _halfCarry = false;
         _zero = ( value == 0 ) & zeroFlagMask;
     }
-    
+
     void CPU::rlc_mhl()
     {
         unsigned char mem( _memory.readByte( _HL.word ) );
@@ -1288,7 +1288,7 @@ namespace gbemu {
             nextState = kEnabled;
             changeState = true;
         }
-        
+
         int nbCycles( 4 );
         if ( !_isHalted ) {
             nbCycles = execute( decodeOpcode() );
@@ -1301,7 +1301,7 @@ namespace gbemu {
             // Set the next interrupt state
             _interruptState = nextState;
         }
-        
+
         return nbCycles;
     }
 

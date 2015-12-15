@@ -1,7 +1,7 @@
 #pragma once
 
-#include "registers.h"
-#include "memoryRegion.h"
+#include <cpu/registers.h>
+#include <memory/memoryRegion.h>
 
 namespace gbemu {
 
@@ -19,7 +19,7 @@ namespace gbemu {
         static const unsigned char kIFHVBlankFlag = 0x2;
         static const unsigned char kIFTimerOverflowFlag = 0x4;
         static const unsigned char kIFHighToLowFlag = 0x10;
-        
+
         static bool isROMBank0( unsigned short addr );
         static bool isSwitchableROMBank( unsigned short addr );
         static bool isVideoRAM( unsigned short addr );
@@ -47,8 +47,8 @@ namespace gbemu {
 
     private:
         MemoryRegion< 0xC000, 0xE000 > _internalRAM;
-        // FIXME: This big array should be deprecated 
-        // in favor of a smaller byte array that covers 
+        // FIXME: This big array should be deprecated
+        // in favor of a smaller byte array that covers
         // only the memory registers
         unsigned char                  _bytes[64*1024];
         Cartridge*                     _cartridge;

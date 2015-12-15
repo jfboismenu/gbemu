@@ -1,6 +1,6 @@
-#include "videoDisplay.h"
-#include "memory.h"
-#include "cpu.h"
+#include <video/videoDisplay.h>
+#include <memory/memory.h>
+#include <cpu/cpu.h>
 #include <array>
 
 namespace gbemu {

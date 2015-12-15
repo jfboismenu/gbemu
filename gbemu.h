@@ -9,16 +9,14 @@
 #ifndef gbemu_gbemu_h
 #define gbemu_gbemu_h
 
-#include "gameboy.h"
+#include <gameboy.h>
 
 namespace gbemu {
 
     enum OutputEvent
     {
         NoEvent = 0,
-        SoundFrame1Ready = 1,
-        SoundFrame2Ready = 2,
-        VideoFrameReady = 4
+        VideoFrameReady = 1
     };
 
     std::unique_ptr< Gameboy > initGlobalEmulatorParams(

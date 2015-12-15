@@ -11,13 +11,12 @@
 
 #include <set>
 
-#include "common.h"
-#include "cartridgeInfo.h"
-#include "debugging.h"
-#include "memory.h"
-#include "cpu.h"
-#include "videoDisplay.h"
-#include "gameboy.h"
+#include <common/common.h>
+#include <memory/cartridgeInfo.h>
+#include <memory/memory.h>
+#include <cpu/cpu.h>
+#include <video/videoDisplay.h>
+#include <gameboy.h>
 
 namespace gbemu {
 

@@ -1,4 +1,4 @@
-#include "gameboy.h"
+#include <gameboy.h>
 
 namespace gbemu
 {

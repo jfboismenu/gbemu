@@ -1,7 +1,7 @@
 #pragma once
 
-#include "opcode.h"
-#include "registers.h"
+#include <cpu/opcode.h>
+#include <cpu/registers.h>
 
 namespace gbemu {
 
@@ -29,7 +29,7 @@ namespace gbemu {
         void operator=( const CPU& cpu );
 
         enum InterruptState { kEnabled = 0, kDisabled = 1, kDisabledNextCycle = 2, kEnabledNextCycle = 3 };
-        
+
 
         Opcode decodeOpcode();
         unsigned char readPCByte();
@@ -68,8 +68,8 @@ namespace gbemu {
         void inc_nn( unsigned short& value );
         void dec_MemoryHL();
         void inc_MemoryHL();
-        void ld_r1_r2( 
-            unsigned char& r1, unsigned char value 
+        void ld_r1_r2(
+            unsigned char& r1, unsigned char value
         );
         void ld_hl_r2( unsigned char value );
         void bit_b_r( unsigned int index, unsigned char value );

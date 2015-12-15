@@ -1,4 +1,4 @@
-#include "registers.h"
+#include <cpu/registers.h>
 
 namespace gbemu {
     Registers::Registers()

@@ -6,9 +6,9 @@
 //
 //
 
-#include "mbc.h"
-#include "memory.h"
-#include "cartridgeInfo.h"
+#include <memory/mbc.h>
+#include <memory/memory.h>
+#include <memory/cartridgeInfo.h>
 
 namespace {
     using namespace gbemu;

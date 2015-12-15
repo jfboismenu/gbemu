@@ -1,20 +1,18 @@
-#include "cartridgeInfo.h"
-#include "memory.h"
-#include "mbc.h"
+#include <memory/cartridgeInfo.h>
+#include <memory/memory.h>
+#include <memory/mbc.h>
 
 #include <fstream>
 #include <cassert>
 
 namespace gbemu {
 
-    
-
     Cartridge::Cartridge()
     {}
 
     Cartridge::~Cartridge()
     {}
-    
+
     std::vector< unsigned char > allocateRAM(
         unsigned char value,
         Cartridge::Type cartType
@@ -27,7 +25,7 @@ namespace gbemu {
             case Cartridge::kROM_MBC2_BATTERY: {
                 return std::vector< unsigned char >( 2 * 1024, 0 );
             }
-        
+
             default: {
                 switch( value ) {
                     case 0:
@@ -53,9 +51,9 @@ namespace gbemu {
         // Validate it and allocate buffer
         JFX_ASSERT( !_bytes.empty() );
         JFX_CMP_ASSERT( _bytes.size(), <, 2 * 1024 * 1024 );
-        
+
         std::vector< unsigned char > ram;
-        
+
         const std::string::size_type pos = filename.rfind( '.' );
         if ( pos == std::string::npos ) {
             _ramPath = filename + ".ram";
@@ -63,17 +61,17 @@ namespace gbemu {
         else {
             _ramPath = filename.substr( 0, pos ) + ".ram";
         }
-        
+
         // Read RAM from file
         _ramBytes = readFile( _ramPath );
         // If nothing was read, allocate space for the RAM based on the cart info
         if ( _ramBytes.empty() ) {
             _ramBytes = allocateRAM( _bytes[ 0x149 ], getType() );
         }
-        
-        
+
+
         _mbc = MemoryBlockController::create( getType(), _bytes, _ramBytes );
-        
+
     }
     unsigned char Cartridge::getByte( const unsigned short pos ) const
     {
@@ -163,9 +161,9 @@ namespace gbemu {
                     return "ROM+MBC3";
                 default:
                     return "Unknown Cartridge Type";
-	        }   
+	        }
         }
-        
+
         bool isGameBoyColor( const Cartridge& cart )
         {
             return cart.getByte( 0x143 ) == 0x80;

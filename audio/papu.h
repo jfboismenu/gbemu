@@ -1,6 +1,6 @@
 #pragma once
 
-#include "register.h"
+#include <common/register.h>
 #include <array>
 
 namespace gbemu {

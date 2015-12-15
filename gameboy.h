@@ -1,14 +1,13 @@
 #pragma once
 
-#include "memory.h"
-#include "cartridgeInfo.h"
-#include "debugging.h"
-#include "cpu.h"
-#include "videoDisplay.h"
-#include "bootRom.h"
-#include "papu.h"
-#include "timers.h"
-#include "clock.h"
+#include <memory/memory.h>
+#include <memory/cartridgeInfo.h>
+#include <memory/bootRom.h>
+#include <cpu/cpu.h>
+#include <video/videoDisplay.h>
+#include <audio/papu.h>
+#include <cpu/timers.h>
+#include <base/clock.h>
 
 namespace gbemu {
 
@@ -35,12 +34,12 @@ namespace gbemu {
         BootRom _bootRom;
         PAPU   _papu;
         Memory _memory;
-        
+
         Cartridge _cartridge;
         DebugStringHandlerRegistry _debugReg;
         CPU _cpu;
         Timers _timers;
-        
+
         VideoDisplay _video;
     };
 }

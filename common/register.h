@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include <common/common.h>
 
 namespace gbemu {
     template< typename traits, int ReadMask = 0xFF, int WriteMask = 0xFF >
