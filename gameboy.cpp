@@ -27,11 +27,6 @@ namespace gbemu
         return _papu;
     }
 
-    DebugStringHandlerRegistry& Gameboy::getDebugRegistry()
-    {
-        return _debugReg;
-    }
-
     const Clock& Gameboy::getClock() const
     {
         return _clock;

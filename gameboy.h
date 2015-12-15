@@ -22,7 +22,6 @@ namespace gbemu {
         PAPU& getPAPU();
         Cartridge& getCartridge();
         VideoDisplay& getVideo();
-        DebugStringHandlerRegistry& getDebugRegistry();
         const Clock& getClock() const;
         int doCycle();
 
@@ -36,7 +35,6 @@ namespace gbemu {
         Memory _memory;
 
         Cartridge _cartridge;
-        DebugStringHandlerRegistry _debugReg;
         CPU _cpu;
         Timers _timers;
 

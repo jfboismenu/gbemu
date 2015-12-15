@@ -29,7 +29,7 @@
 #endif
 #include <set>
 
-#include <comon/common.h>
+#include <common/common.h>
 #include <memory/cartridgeInfo.h>
 #include <memory/memory.h>
 #include <cpu/cpu.h>
