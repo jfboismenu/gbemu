@@ -6,6 +6,8 @@
 //
 //
 
+#include <array>
+
 #ifndef __gbemu__memoryRegion__
 #define __gbemu__memoryRegion__
 
@@ -14,28 +16,20 @@ class MemoryRegion
 {
 public:
     MemoryRegion();
-    ~MemoryRegion();
     bool isInside( int addr ) const;
     const unsigned char& byte( int addr ) const;
     const unsigned short& word( int addr ) const;
     unsigned char& byte( int addr );
     unsigned short& word( int addr );
 private:
-    unsigned char* _bytes;
+    std::array<unsigned char, EndAddr - StartAddr> _bytes;
     unsigned char* _startAddr;
 };
 
 template< int StartAddr, int EndAddr >
 inline MemoryRegion< StartAddr, EndAddr >::MemoryRegion() :
-    _bytes( new unsigned char[ EndAddr - StartAddr ] ),
-    _startAddr( _bytes - StartAddr )
+    _startAddr( &_bytes[0] - StartAddr )
 {}
-
-template< int StartAddr, int EndAddr >
-inline MemoryRegion< StartAddr, EndAddr >::~MemoryRegion()
-{
-    delete [] _bytes;
-}
 
 template< int StartAddr, int EndAddr >
 inline bool MemoryRegion< StartAddr, EndAddr >::isInside( int addr ) const

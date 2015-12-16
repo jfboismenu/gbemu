@@ -141,43 +141,43 @@ void SquareWaveChannel::writeByte(
 )
 {
     if ( addr == _soundLengthRegisterAddr ) {
-        _nr11.write( value );
+        _rLengthDuty.write( value );
         JFX_LOG("-----NR11-ff11-----");
-        JFX_LOG("Wave pattern duty            : " << _nr11.bits.getWaveDutyPercentage());
-        JFX_LOG("Length counter load register : " << (int)_nr11.bits.getSoundLength());
+        JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
+        JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
     }
     else if ( addr == _evenloppeRegisterAddr ) {
-        _nr12.write( value );
+        _rEnveloppe.write( value );
         JFX_LOG("-----NR12-ff12-----");
-        JFX_LOG("Initial channel volume       : " << (int)_nr12.bits.initialVolume);
-        JFX_LOG("Volume sweep direction       : " << ( _nr12.bits.isAmplifying() ? "up" : "down" ));
-        JFX_LOG("Length of each step          : " << (int)_nr12.bits.sweepLength);
+        JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
+        JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
+        JFX_LOG("Length of each step          : " << (int)_rEnveloppe.bits.sweepLength);
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
-        _nr13.write( value );
+        _rFrequencyLo.write( value );
         JFX_LOG("-----NR13-ff13-----");
-        JFX_LOG("Frequency lo: " << (int)_nr13.bits.freqLo);
+        JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
     }
     else if ( addr == _frequencyHiRegisterAddr ) {
-        _nr14.write( value );
+        _rFrequencyHiPlayback.write( value );
         JFX_LOG("-----NR14-ff14-----");
-        JFX_LOG("Frequency hi : " << (int)_nr14.bits.freqHi);
-        JFX_LOG("Consecutive  : " << ( _nr14.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
-        JFX_LOG("Initialize?  : " << ( _nr14.bits.initialize == 1 ));
+        JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
+        JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
+        JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
         // Push a new sound event in a thread-safe manner.
         std::lock_guard<std::mutex> lock(_mutex);
         const int gbNote = getGbNote();
         JFX_CMP_ASSERT(2048 - gbNote, >, 0);
         _soundEvents[_lastEvent] = SoundEvent(
-            _nr14.bits.initialize == 1,
-            _nr14.bits.isLooping(),
+            _rFrequencyHiPlayback.bits.initialize == 1,
+            _rFrequencyHiPlayback.bits.isLooping(),
             _clock.getTimeInCycles(),
             _clock.getTimeInSeconds(),
-            _nr11.bits.getSoundLength(),
+            _rLengthDuty.bits.getSoundLength(),
             gbNoteToFrequency(gbNote),
-            _nr11.bits.getWaveDutyPercentage(),
-            _nr12.bits.initialVolume
+            _rLengthDuty.bits.getWaveDutyPercentage(),
+            _rEnveloppe.bits.initialVolume
         );
         ++_lastEvent;
         JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
@@ -186,7 +186,7 @@ void SquareWaveChannel::writeByte(
 
 short SquareWaveChannel::getGbNote() const
 {
-    return _nr13.bits.freqLo | ( _nr14.bits.freqHi << 8 );
+    return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
 }
 
 SquareWaveChannel::SoundEvent::SoundEvent(

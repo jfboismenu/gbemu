@@ -33,21 +33,6 @@ namespace gbemu {
         return gbInstance;
     }
 
- //   void debugCPU( const Registers& /*registers*/ )
- //   {
- //       // if we are booting rom, don't bother logging instructions
- //       if ( gbInstance.getCPU().inBootRom() ) {
- //           return;
- //       }
- //       /*if ( !addresses.insert( registers._PC ).second ) {
- //           return;
- //       }*/
- //       // Print debug information
- //   //debug( os, _cpu, _memory, _debugReg );
- //       //printRegisters( os, registers, _cpu.getRegisters() );
- //      // os << std::endl;
- //   }
-
     bool emulateSomeCycles( Gameboy& gbInstance, int nbCyclesToRun )
     {
         bool frameReady = false;
@@ -64,7 +49,10 @@ namespace gbemu {
                 break;
             }
         }
-        //gbInstance.getCartridge().saveRAM();
+        // FIXME: The emulator was taking a huge performance hit when saving
+        // ram to disk. Needs a better approach than the current one.
+        // Once every frame?
+        // gbInstance.getCartridge().saveRAM();
         return frameReady;
     }
 

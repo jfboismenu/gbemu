@@ -114,10 +114,10 @@ namespace gbemu {
         char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
         short getGbNote() const;
 
-        Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _nr11;
-        Register< EnveloppeBits >                              _nr12;
-        Register< FrequencyLoBits, 0x0, 0xFF >                 _nr13;
-        Register< FrequencyHiBits, 0x40, 0XFF >                _nr14;
+        Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _rLengthDuty;
+        Register< EnveloppeBits >                              _rEnveloppe;
+        Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
+        Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
         const Clock&                                           _clock;
 
         const unsigned short _soundLengthRegisterAddr;
