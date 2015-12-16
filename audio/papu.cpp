@@ -3,7 +3,6 @@
 #include <common/common.h>
 #include <base/logger.h>
 #include <base/clock.h>
-#include <base/mutex.h>
 #include <iostream>
 
 namespace {
@@ -13,8 +12,6 @@ namespace {
     }
 
     const int PLAY_FOREVER = 0x7fffffff;
-
-    gbemu::Mutex mutex;
 }
 
 namespace gbemu {
@@ -271,7 +268,7 @@ void PAPU::SquareWaveChannel::updateEventsQueue(
     const float audioFrameStartInSeconds
 )
 {
-    MutexGuard g(mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     for (BufferIndex i = _firstEvent; i != _playbackLastEvent ; ++i) {
 
         // If sound is looping and the end of that audio event is before this audio frame.
@@ -340,7 +337,7 @@ void PAPU::SquareWaveChannel::writeByte(
         JFX_LOG("Initialize?  : " << ( _nr14.bits._initialize == 1 ));
 
         // Push a new sound event in a thread-safe manner.
-        MutexGuard g(mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         const int gbNote = getGbNote();
         JFX_CMP_ASSERT(2048 - gbNote, >, 0);
         _soundEvents[_lastEvent] = SoundEvent(

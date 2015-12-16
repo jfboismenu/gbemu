@@ -31,7 +31,7 @@ link_directories(/usr/local/lib)
 
 add_executable(
     gbemu
-    base/audio.cpp base/mutex.cpp base/logger.cpp base/clock.cpp
+    base/audio.cpp base/logger.cpp base/clock.cpp
     common/register.cpp common/common.cpp
     cpu/cpu.cpp cpu/opcode.cpp cpu/timers.cpp cpu/registers.cpp
     video/videoDisplay.cpp

@@ -2,6 +2,7 @@
 
 #include <common/register.h>
 #include <array>
+#include <mutex>
 
 namespace gbemu {
 
@@ -219,7 +220,7 @@ namespace gbemu {
             BufferIndex               _firstEvent;
             BufferIndex               _lastEvent;
             BufferIndex               _playbackLastEvent;
-
+            std::mutex _mutex;
         };
 
         SquareWaveChannel  _squareWaveChannel1;
