@@ -31,12 +31,12 @@ link_directories(/usr/local/lib)
 
 add_executable(
     gbemu
-    base/audio.cpp base/logger.cpp base/clock.cpp
+    base/audio.cpp base/logger.cpp base/clock.cpp base/cyclicCounter.cpp
     common/register.cpp common/common.cpp
     cpu/cpu.cpp cpu/opcode.cpp cpu/timers.cpp cpu/registers.cpp
     video/videoDisplay.cpp
     memory/bootRom.cpp memory/mbc.cpp memory/memory.cpp memory/cartridgeInfo.cpp memory/memoryRegion.cpp
-    audio/papu.cpp
+    audio/papu.cpp audio/squareWaveChannel.cpp
     gameboy.cpp gbemu.cpp glutapp.cpp
 )
 
