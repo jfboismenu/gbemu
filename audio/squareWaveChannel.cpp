@@ -62,8 +62,6 @@ void SquareWaveChannel::renderAudio(void* raw_output, const unsigned long frameC
     const int cycleStart = startInSeconds * _clock.getRate();
     const int cycleEnd = endInSeconds * _clock.getRate();
 
-    JFX_LOG_VAR(_clock.getTimeInSeconds() - realTime);
-
     // Queue is empty, do not play anything.
     if (_firstEvent == _playbackLastEvent) {
         return;
@@ -88,7 +86,11 @@ void SquareWaveChannel::renderAudio(void* raw_output, const unsigned long frameC
         }
         if (_soundEvents[currentEvent].isPlaying) {
             const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
-            output[i] += computeSample(_soundEvents[currentEvent].waveFrequency, timeSinceEventStart, _soundEvents[currentEvent].waveDuty) * _soundEvents[currentEvent].waveVolume;
+            output[i] += computeSample(
+                _soundEvents[currentEvent].waveFrequency, 
+                timeSinceEventStart,
+                _soundEvents[currentEvent].waveDuty
+            ) * _soundEvents[currentEvent].getVolumeAt(frameTimeInSeconds);
         }
     }
 }
@@ -151,7 +153,7 @@ void SquareWaveChannel::writeByte(
         JFX_LOG("-----NR12-ff12-----");
         JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
         JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
-        JFX_LOG("Length of each step          : " << (int)_rEnveloppe.bits.sweepLength);
+        JFX_LOG("Length of each step          : " << _rEnveloppe.bits.getSweepLength() << " seconds");
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
@@ -177,7 +179,9 @@ void SquareWaveChannel::writeByte(
             _rLengthDuty.bits.getSoundLength(),
             gbNoteToFrequency(gbNote),
             _rLengthDuty.bits.getWaveDutyPercentage(),
-            _rEnveloppe.bits.initialVolume
+            _rEnveloppe.bits.initialVolume,
+            _rEnveloppe.bits.isAmplifying(),
+            _rEnveloppe.bits.getSweepLength()
         );
         ++_lastEvent;
         JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
@@ -197,7 +201,9 @@ SquareWaveChannel::SoundEvent::SoundEvent(
     float wlis,
     int wf,
     float d,
-    char v
+    char v,
+    bool va,
+    float sl
 ) : isPlaying(ip),
     isLooping(il),
     waveStart(ws),
@@ -205,12 +211,33 @@ SquareWaveChannel::SoundEvent::SoundEvent(
     waveLengthInSeconds(wlis),
     waveFrequency(wf),
     waveDuty(d),
-    waveVolume(v)
+    waveVolume(v),
+    isVolumeAmplifying(va),
+    sweepLength(sl)
 {}
 
 float SquareWaveChannel::SoundEvent::waveEndInSeconds() const
 {
     return waveStartInSeconds + waveLengthInSeconds;
+}
+
+unsigned char SquareWaveChannel::SoundEvent::getVolumeAt(float currentTime) const
+{
+    // Sweep length is zero, so don't amplify or reduce volume.
+    if (sweepLength == 0.f) {
+        return waveVolume;
+    }
+
+    // Compute how many sweeps happened since the beginning of this wave.
+    const int nbSweepsCompleted = (currentTime - waveStartInSeconds) / sweepLength;
+
+    return static_cast<unsigned char>(
+        std::min(
+            // Update the volume in the right direction, but clamp it between 0 and 15 inclusively.
+            std::max(0, isVolumeAmplifying ? waveVolume + nbSweepsCompleted: waveVolume - nbSweepsCompleted),
+            15
+        )
+    );
 }
 
 }

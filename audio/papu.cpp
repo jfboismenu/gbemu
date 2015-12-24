@@ -20,24 +20,24 @@ PAPU::PAPU( const Clock& clock ) :
     _initializing( true )
 {
 
-    writeByte(kNR10, 0x80);
-    writeByte(kNR11, 0xBF);
-    writeByte(kNR12, 0xF3);
-    writeByte(kNR14, 0xBF);
-    writeByte(kNR21, 0x3F);
-    writeByte(kNR22, 0x00);
-    writeByte(kNR24, 0xBF);
-    writeByte(kNR30, 0x7F);
-    writeByte(kNR31, 0xFF);
-    writeByte(kNR32, 0x9F);
-    writeByte(kNR33, 0xBF);
-    writeByte(kNR41, 0xFF);
-    writeByte(kNR42, 0x00);
-    writeByte(kNR43, 0x00);
-    writeByte(kNR30, 0xBF);
-    writeByte(kNR50, 0x77);
-    writeByte(kNR51, 0xF3);
-    writeByte(kNR52, 0xF1);
+    // writeByte(kNR10, 0x80);
+    // writeByte(kNR11, 0xBF);
+    // writeByte(kNR12, 0xF3);
+    // writeByte(kNR14, 0xBF);
+    // writeByte(kNR21, 0x3F);
+    // writeByte(kNR22, 0x00);
+    // writeByte(kNR24, 0xBF);
+    // writeByte(kNR30, 0x7F);
+    // writeByte(kNR31, 0xFF);
+    // writeByte(kNR32, 0x9F);
+    // writeByte(kNR33, 0xBF);
+    // writeByte(kNR41, 0xFF);
+    // writeByte(kNR42, 0x00);
+    // writeByte(kNR43, 0x00);
+    // writeByte(kNR30, 0xBF);
+    // writeByte(kNR50, 0x77);
+    // writeByte(kNR51, 0xF3);
+    // writeByte(kNR52, 0xF1);
     _initializing = false;
 }
 
@@ -121,8 +121,6 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
 {
     _rate = rate;
     float realTime(float(_currentPlaybackTime)/_rate);
-
-    JFX_LOG("audio lag: " << _clock.getTimeInSeconds() - realTime);
 
     _squareWaveChannel1.renderAudio(output, frameCount, rate, realTime);
     _squareWaveChannel2.renderAudio(output, frameCount, rate, realTime);

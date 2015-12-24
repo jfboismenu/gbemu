@@ -64,8 +64,14 @@ namespace gbemu {
         {
             return _direction == 1;
         }
-        unsigned char sweepLength : 3;
+
+        float getSweepLength() const
+        {
+            return _sweepLength / 64.f;
+        }
+
     private:
+        unsigned char _sweepLength : 3;
         unsigned char _direction : 1;
     public:
         unsigned char initialVolume : 4;
@@ -97,7 +103,9 @@ namespace gbemu {
                 float wlis,
                 int wf,
                 float d,
-                char v
+                char v,
+                bool va,
+                float sl
             );
             SoundEvent() = default;
             bool isPlaying;
@@ -107,8 +115,13 @@ namespace gbemu {
             float waveLengthInSeconds;
             int waveFrequency;
             float waveDuty;
-            char waveVolume;
             float waveEndInSeconds() const;
+            unsigned char getVolumeAt(float currentTime) const;
+        private:
+            char waveVolume;
+            bool isVolumeAmplifying;
+            float  sweepLength;
+            
         };
 
         char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
