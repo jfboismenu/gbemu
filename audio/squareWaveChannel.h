@@ -56,7 +56,7 @@ namespace gbemu {
         unsigned char soundLength : 6;
         unsigned char wavePatternDuty : 2;
     };
-    
+
     class EnveloppeBits
     {
     public:
@@ -134,6 +134,6 @@ namespace gbemu {
         BufferIndex               _firstEvent;
         BufferIndex               _lastEvent;
         BufferIndex               _playbackLastEvent;
-        std::mutex _mutex;
+        std::mutex                _mutex;
     };
 }

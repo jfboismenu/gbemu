@@ -16,28 +16,29 @@ void PAPU::renderAudio(void* output, const unsigned long frameCount, const int r
 PAPU::PAPU( const Clock& clock ) : 
     _clock( clock ),
     _squareWaveChannel1( clock, kNR11, kNR12, kNR13, kNR14 ),
-    _squareWaveChannel2( clock, kNR21, kNR22, kNR23, kNR24 )
+    _squareWaveChannel2( clock, kNR21, kNR22, kNR23, kNR24 ),
+    _initializing( true )
 {
-/*
-    mr(kNR10) = 0x80;
-    mr(kNR11) = 0xBF;
-    mr(kNR12) = 0xF3;
-    mr(kNR14) = 0xBF;
-    mr(kNR21) = 0x3F;
-    mr(kNR22) = 0x00;
-    mr(kNR24) = 0xBF;
-    mr(kNR30) = 0x7F;
-    mr(kNR31) = 0xFF;
-    mr(kNR32) = 0x9F;
-    mr(kNR33) = 0xBF;
-    mr(kNR41) = 0xFF;
-    mr(kNR42) = 0x00;
-    mr(kNR43) = 0x00;
-    mr(kNR30) = 0xBF;
-    mr(kNR50) = 0x77;
-    mr(kNR51) = 0xF3;
-    mr(kNR52) = 0xF1;
-*/
+
+    writeByte(kNR10, 0x80);
+    writeByte(kNR11, 0xBF);
+    writeByte(kNR12, 0xF3);
+    writeByte(kNR14, 0xBF);
+    writeByte(kNR21, 0x3F);
+    writeByte(kNR22, 0x00);
+    writeByte(kNR24, 0xBF);
+    writeByte(kNR30, 0x7F);
+    writeByte(kNR31, 0xFF);
+    writeByte(kNR32, 0x9F);
+    writeByte(kNR33, 0xBF);
+    writeByte(kNR41, 0xFF);
+    writeByte(kNR42, 0x00);
+    writeByte(kNR43, 0x00);
+    writeByte(kNR30, 0xBF);
+    writeByte(kNR50, 0x77);
+    writeByte(kNR51, 0xF3);
+    writeByte(kNR52, 0xF1);
+    _initializing = false;
 }
 
 void PAPU::writeByte(
@@ -113,7 +114,7 @@ float PAPU::getCurrentPlaybackTime() const
 bool PAPU::isRegisterAvailable( const unsigned short addr ) const
 {
     // NR52 is always available. However, if it's off and we are accessing a non wave-pattern address, we can't access them.
-    return addr == kNR52 || !( ( _nr52.bits._allSoundOn == 0 ) && ( 0xFF10 <= addr ) && ( addr <= 0xFF2F ) );
+    return _initializing || addr == kNR52 || !( ( _nr52.bits._allSoundOn == 0 ) && ( 0xFF10 <= addr ) && ( addr <= 0xFF2F ) );
 }
 
 void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, const int rate)

@@ -98,5 +98,6 @@ namespace gbemu {
         int _rate;
         int64_t _currentPlaybackTime;
         const Clock& _clock;
+        bool                      _initializing;
     };
 }
