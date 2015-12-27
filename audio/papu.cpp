@@ -15,8 +15,8 @@ void PAPU::renderAudio(void* output, const unsigned long frameCount, const int r
 
 PAPU::PAPU( const Clock& clock ) : 
     _clock( clock ),
-    _squareWaveChannel1( clock, kNR11, kNR12, kNR13, kNR14 ),
-    _squareWaveChannel2( clock, kNR21, kNR22, kNR23, kNR24 ),
+    _squareWaveChannel1( clock, kNR10, kNR11, kNR12, kNR13, kNR14 ),
+    _squareWaveChannel2( clock, 0, kNR21, kNR22, kNR23, kNR24 ),
     _initializing( true )
 {
 
@@ -74,10 +74,10 @@ void PAPU::writeByte(
         // JFX_LOG("Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ));
         // JFX_LOG("Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ));
     }
-    else if ( addr == kNR11 || addr == kNR12 || addr == kNR13 || addr == kNR14 ) {
+    else if ( addr == kNR10 || addr == kNR11 || addr == kNR12 || addr == kNR13 || addr == kNR14 ) {
         _squareWaveChannel1.writeByte( addr, value );
     }
-    else if ( addr == kNR21 || addr == kNR22 || addr == kNR23 || addr == kNR24 ) {
+    else if ( addr == kNR20 || addr == kNR21 || addr == kNR22 || addr == kNR23 || addr == kNR24 ) {
         _squareWaveChannel2.writeByte( addr, value );
     }
     else {

@@ -15,6 +15,7 @@ namespace gbemu {
 
 SquareWaveChannel::SquareWaveChannel(
     const Clock& clock,
+    unsigned short frequencyShiftRegisterAddr,
     unsigned short soundLengthRegisterAddr,
     unsigned short evenloppeRegisterAddr,
     unsigned short frequencyLowRegisterAddr,
@@ -24,6 +25,7 @@ SquareWaveChannel::SquareWaveChannel(
     _firstEvent(0),
     _lastEvent(0),
     _playbackLastEvent(0),
+    _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
     _soundLengthRegisterAddr(soundLengthRegisterAddr),
     _evenloppeRegisterAddr(evenloppeRegisterAddr),
     _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
@@ -142,30 +144,37 @@ void SquareWaveChannel::writeByte(
     const unsigned char value
 )
 {
-    if ( addr == _soundLengthRegisterAddr ) {
+    if ( addr == _frequencySweepRegisterAddr) {
+        _rFrequencySweep.write(value);
+        // JFX_LOG("-----NR10-ff10-----")
+        // JFX_LOG("Increasing: " << _rFrequencySweep.bits.isIncreasing());
+        // JFX_LOG("Number of shifts: " << _rFrequencySweep.bits.getNbSweepShifts());
+        // JFX_LOG("Shift length: " << _rFrequencySweep.bits.getSweepLength() << " seconds");
+    }
+    else if ( addr == _soundLengthRegisterAddr ) {
         _rLengthDuty.write( value );
-        JFX_LOG("-----NR11-ff11-----");
-        JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
-        JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
+        // JFX_LOG("-----NR11-ff11-----");
+        // JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
+        // JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
     }
     else if ( addr == _evenloppeRegisterAddr ) {
         _rEnveloppe.write( value );
-        JFX_LOG("-----NR12-ff12-----");
-        JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
-        JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
-        JFX_LOG("Length of each step          : " << _rEnveloppe.bits.getSweepLength() << " seconds");
+        // JFX_LOG("-----NR12-ff12-----");
+        // JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
+        // JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
+        // JFX_LOG("Length of each step          : " << _rEnveloppe.bits.getSweepLength() << " seconds");
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
-        JFX_LOG("-----NR13-ff13-----");
-        JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
+        // JFX_LOG("-----NR13-ff13-----");
+        // JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
     }
     else if ( addr == _frequencyHiRegisterAddr ) {
         _rFrequencyHiPlayback.write( value );
-        JFX_LOG("-----NR14-ff14-----");
-        JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
-        JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
-        JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
+        // JFX_LOG("-----NR14-ff14-----");
+        // JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
+        // JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
+        // JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
         // Push a new sound event in a thread-safe manner.
         std::lock_guard<std::mutex> lock(_mutex);
@@ -174,10 +183,10 @@ void SquareWaveChannel::writeByte(
         _soundEvents[_lastEvent] = SoundEvent(
             _rFrequencyHiPlayback.bits.initialize == 1,
             _rFrequencyHiPlayback.bits.isLooping(),
+            gbNoteToFrequency(gbNote),
             _clock.getTimeInCycles(),
             _clock.getTimeInSeconds(),
             _rLengthDuty.bits.getSoundLength(),
-            gbNoteToFrequency(gbNote),
             _rLengthDuty.bits.getWaveDutyPercentage(),
             _rEnveloppe.bits.initialVolume,
             _rEnveloppe.bits.isAmplifying(),
@@ -196,20 +205,18 @@ short SquareWaveChannel::getGbNote() const
 SquareWaveChannel::SoundEvent::SoundEvent(
     bool ip,
     bool il,
+    int wf,
     int64_t ws,
     float wsis,
     float wlis,
-    int wf,
     float d,
     char v,
     bool va,
     float sl
-) : isPlaying(ip),
-    isLooping(il),
+) : SoundEventBase(ip, il, wf),
     waveStart(ws),
     waveStartInSeconds(wsis),
     waveLengthInSeconds(wlis),
-    waveFrequency(wf),
     waveDuty(d),
     waveVolume(v),
     isVolumeAmplifying(va),

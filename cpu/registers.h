@@ -20,6 +20,7 @@ namespace gbemu
         kNR12 = 0xFF12,
         kNR13 = 0xFF13,
         kNR14 = 0xFF14,
+        kNR20 = 0xFF15, // Unused
         kNR21 = 0xFF16,
         kNR22 = 0xFF17,
         kNR23 = 0xFF18,

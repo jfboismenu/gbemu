@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audio/common.h>
 #include <common/register.h>
 #include <base/cyclicCounter.h>
 #include <mutex>
@@ -8,27 +9,6 @@
 namespace gbemu {
 
     class Clock;
-
-    class FrequencyLoBits
-    {
-    public:
-        unsigned char freqLo;
-    };
-
-    class FrequencyHiBits
-    {
-    public:
-        unsigned char freqHi : 3;
-    private:
-        unsigned char _unused : 3;
-        unsigned char _consecutive : 1;
-    public:
-        JFX_INLINE bool isLooping() const
-        {
-            return _consecutive == 0;
-        }
-        unsigned char initialize : 1;
-    };
 
     class SoundLengthWavePatternDutyBits
     {
@@ -77,11 +57,35 @@ namespace gbemu {
         unsigned char initialVolume : 4;
     };
 
+    class FrequencySweepBits
+    {
+    public:
+        bool isIncreasing() const
+        {
+            return _isIncreasing == 0;
+        }
+
+        int getNbSweepShifts() const
+        {
+            return _nbSweepShifts;
+        }
+
+        float getSweepLength() const
+        {
+            return _sweepLength / 128.f;
+        }
+    private:
+        unsigned char _nbSweepShifts: 3;
+        unsigned char _isIncreasing: 1;
+        unsigned char _sweepLength: 4;
+    };
+
     class SquareWaveChannel
     {
     public:
         SquareWaveChannel(
             const Clock& clock,
+            unsigned short frequencyShiftRegisterAddr,
             unsigned short soundLengthRegisterAddr,
             unsigned short evenloppeRegisterAddr,
             unsigned short frequencyLowRegisterAddr,
@@ -93,27 +97,26 @@ namespace gbemu {
     private:
         void updateEventsQueue(const float audioFrameStartInSeconds);
         void incrementFirstEventIndex();
-        struct SoundEvent
+
+        class SoundEvent : public SoundEventBase
         {
+        public:
             SoundEvent(
-                bool pl,
+                bool ip,
                 bool il,
+                int wf,
                 int64_t ws,
                 float wsis,
                 float wlis,
-                int wf,
                 float d,
                 char v,
                 bool va,
                 float sl
             );
             SoundEvent() = default;
-            bool isPlaying;
-            bool isLooping;
             int waveStart;
             float waveStartInSeconds;
             float waveLengthInSeconds;
-            int waveFrequency;
             float waveDuty;
             float waveEndInSeconds() const;
             unsigned char getVolumeAt(float currentTime) const;
@@ -121,18 +124,19 @@ namespace gbemu {
             char waveVolume;
             bool isVolumeAmplifying;
             float  sweepLength;
-            
         };
 
         char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
         short getGbNote() const;
 
+        Register< FrequencySweepBits, 0xFF, 0xFF >             _rFrequencySweep;
         Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _rLengthDuty;
         Register< EnveloppeBits >                              _rEnveloppe;
         Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
         const Clock&                                           _clock;
 
+        const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;
         const unsigned short _evenloppeRegisterAddr;
         const unsigned short _frequencyLowRegisterAddr;

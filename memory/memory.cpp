@@ -157,7 +157,7 @@ P13-------O-Down-----O-Start ---- bit 3
             else if ( addr == kIF ) {
                 _bytes[ addr ] = value;
             }
-            else if ( kSoundRegistersStart < addr && addr < kSoundRegistersEnd ) {
+            else if ( kSoundRegistersStart <= addr && addr <= kSoundRegistersEnd ) {
                 _papu.writeByte( addr, value );
             }
             else {
