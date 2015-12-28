@@ -1,10 +1,9 @@
 #pragma once
 
+#include <audio/channelBase.h>
 #include <audio/common.h>
 #include <common/register.h>
-#include <base/cyclicCounter.h>
-#include <mutex>
-#include <array>
+
 
 namespace gbemu {
 
@@ -80,7 +79,35 @@ namespace gbemu {
         unsigned char _sweepLength: 4;
     };
 
-    class SquareWaveChannel
+    class SquareWaveSoundEvent : public SoundEventBase
+    {
+    public:
+        SquareWaveSoundEvent(
+            bool ip,
+            bool il,
+            int wf,
+            int64_t ws,
+            float wsis,
+            float wlis,
+            float d,
+            char v,
+            bool va,
+            float sl
+        );
+        SquareWaveSoundEvent() = default;
+        int waveStart;
+        float waveStartInSeconds;
+        float waveLengthInSeconds;
+        float waveDuty;
+        float waveEndInSeconds() const;
+        unsigned char getVolumeAt(float currentTime) const;
+    private:
+        char waveVolume;
+        bool isVolumeAmplifying;
+        float  sweepLength;
+    };
+
+    class SquareWaveChannel : public ChannelBase<SquareWaveSoundEvent>
     {
     public:
         SquareWaveChannel(
@@ -95,36 +122,6 @@ namespace gbemu {
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
     private:
-        void updateEventsQueue(const float audioFrameStartInSeconds);
-        void incrementFirstEventIndex();
-
-        class SoundEvent : public SoundEventBase
-        {
-        public:
-            SoundEvent(
-                bool ip,
-                bool il,
-                int wf,
-                int64_t ws,
-                float wsis,
-                float wlis,
-                float d,
-                char v,
-                bool va,
-                float sl
-            );
-            SoundEvent() = default;
-            int waveStart;
-            float waveStartInSeconds;
-            float waveLengthInSeconds;
-            float waveDuty;
-            float waveEndInSeconds() const;
-            unsigned char getVolumeAt(float currentTime) const;
-        private:
-            char waveVolume;
-            bool isVolumeAmplifying;
-            float  sweepLength;
-        };
 
         char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
         short getGbNote() const;
@@ -134,23 +131,11 @@ namespace gbemu {
         Register< EnveloppeBits >                              _rEnveloppe;
         Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
-        const Clock&                                           _clock;
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;
         const unsigned short _evenloppeRegisterAddr;
         const unsigned short _frequencyLowRegisterAddr;
         const unsigned short _frequencyHiRegisterAddr;
-
-        enum {BUFFER_SIZE = 32};
-
-        std::array<SoundEvent, BUFFER_SIZE> _soundEvents;
-
-        using BufferIndex = CyclicCounter<BUFFER_SIZE>;
-
-        BufferIndex               _firstEvent;
-        BufferIndex               _lastEvent;
-        BufferIndex               _playbackLastEvent;
-        std::mutex                _mutex;
     };
 }
