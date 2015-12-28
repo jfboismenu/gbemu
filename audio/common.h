@@ -29,11 +29,19 @@ namespace gbemu {
         SoundEventBase(
             bool ip,
             bool il,
-            int wf
+            int wf,
+            int64_t ws,
+            float wsis,
+            float wlis
         );
         SoundEventBase() = default;
+        float waveEndInSeconds() const;
+
         bool isPlaying;
         bool isLooping;
         int waveFrequency;
+        int waveStart;
+        float waveStartInSeconds;
+        float waveLengthInSeconds;
     };
 }

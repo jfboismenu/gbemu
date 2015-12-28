@@ -169,20 +169,12 @@ SquareWaveSoundEvent::SquareWaveSoundEvent(
     char v,
     bool va,
     float sl
-) : SoundEventBase(ip, il, wf),
-    waveStart(ws),
-    waveStartInSeconds(wsis),
-    waveLengthInSeconds(wlis),
+) : SoundEventBase(ip, il, wf, ws, wsis, wlis),
     waveDuty(d),
     waveVolume(v),
     isVolumeAmplifying(va),
     sweepLength(sl)
 {}
-
-float SquareWaveSoundEvent::waveEndInSeconds() const
-{
-    return waveStartInSeconds + waveLengthInSeconds;
-}
 
 unsigned char SquareWaveSoundEvent::getVolumeAt(float currentTime) const
 {

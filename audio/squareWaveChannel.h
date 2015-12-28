@@ -4,7 +4,6 @@
 #include <audio/common.h>
 #include <common/register.h>
 
-
 namespace gbemu {
 
     class Clock;
@@ -95,16 +94,13 @@ namespace gbemu {
             float sl
         );
         SquareWaveSoundEvent() = default;
-        int waveStart;
-        float waveStartInSeconds;
-        float waveLengthInSeconds;
         float waveDuty;
-        float waveEndInSeconds() const;
+
         unsigned char getVolumeAt(float currentTime) const;
     private:
         char waveVolume;
         bool isVolumeAmplifying;
-        float  sweepLength;
+        float sweepLength;
     };
 
     class SquareWaveChannel : public ChannelBase<SquareWaveSoundEvent>

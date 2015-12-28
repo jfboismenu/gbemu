@@ -1,10 +1,8 @@
 #pragma once
 
+#include <audio/channelBase.h>
 #include <audio/common.h>
 #include <common/register.h>
-#include <base/cyclicCounter.h>
-#include <mutex>
-#include <array>
 
 namespace gbemu {
 
@@ -37,7 +35,12 @@ namespace gbemu {
         unsigned char _unused2 : 1;
     };
 
-    class WaveChannel
+    class WaveSoundEvent: public SoundEventBase
+    {
+        using SoundEventBase::SoundEventBase;
+    };
+
+    class WaveChannel : public ChannelBase<WaveSoundEvent>
     {
     public:
         WaveChannel(
@@ -47,31 +50,12 @@ namespace gbemu {
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
     private:
-        void updateEventsQueue(const float audioFrameStartInSeconds);
-        void incrementFirstEventIndex();
 
         char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
-
-        class SoundEvent: public SoundEventBase
-        {
-            using SoundEventBase::SoundEventBase;
-        };
 
         Register< SoundLength >   _rSoundLength;
         Register< Volume >        _rVolume;
         Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
-        const Clock&                                           _clock;
-
-        enum {BUFFER_SIZE = 32};
-
-        std::array<SoundEvent, BUFFER_SIZE> _soundEvents;
-
-        using BufferIndex = CyclicCounter<BUFFER_SIZE>;
-
-        BufferIndex               _firstEvent;
-        BufferIndex               _lastEvent;
-        BufferIndex               _playbackLastEvent;
-        std::mutex                _mutex;
     };
 }
