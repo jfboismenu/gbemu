@@ -38,7 +38,7 @@ namespace gbemu {
         char getVolumeShift() const
         {
             switch(_volume) {
-                case 0: return -1;
+                case 0: return 4;
                 default: return _volume - 1;
             }
         }
@@ -48,7 +48,7 @@ namespace gbemu {
         unsigned char _unused2 : 1;
     };
 
-    using WavePatternSamples = std::array< char, kWavePatternRAMEnd - kWavePatternRAMStart >;
+    using WavePatternSamples = std::array< unsigned char, kWavePatternRAMEnd - kWavePatternRAMStart >;
 
     class WaveSoundEvent: public SoundEventBase
     {
@@ -61,10 +61,14 @@ namespace gbemu {
             int64_t ws,
             float wsis,
             float wlis,
+            char vs,
             const WavePatternSamples& samples
         );
+        char getVolumeShift() const;
+    public:
+        WavePatternSamples samples;
     private:
-        WavePatternSamples _samples;
+        char               _volumeShift;
     };
 
     class WaveChannel : public ChannelBase<WaveSoundEvent>
@@ -78,8 +82,14 @@ namespace gbemu {
         unsigned char readByte( unsigned short addr ) const;
         bool contains(unsigned short addr) const;
     private:
+        char computeSample(
+            float frequency,
+            float timeSinceNoteStart,
+            const WavePatternSamples& samples,
+            const char volumeShift
+        ) const;
         short getGbNote() const;
-        char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
+
 
         Register< OnOff >         _rOnOff;
         Register< SoundLength >   _rSoundLength;
@@ -88,6 +98,6 @@ namespace gbemu {
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
 
         WavePatternSamples _wavePattern;
-        char * const _wavePatternPtr;
+        unsigned char * const _wavePatternPtr;
     };
 }

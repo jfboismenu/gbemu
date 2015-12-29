@@ -57,15 +57,18 @@ char SquareWaveChannel::computeSample(
     return howManyInCurrent < duty ? 1 : -1;
 }
 
-void SquareWaveChannel::renderAudio(void* raw_output, const unsigned long frameCount, const int rate, const float realTime)
+void SquareWaveChannel::renderAudio(
+    void* raw_output,
+    const unsigned long frameCount,
+    const int rate,
+    const float realTime
+)
 {
     char* output = reinterpret_cast<char*>(raw_output);
     // Update the interval of sound we're about to produce
     // Convert the start and end to seconds.
     const float startInSeconds = realTime;
     const float endInSeconds = realTime + (float(frameCount) / rate);
-    updateEventsQueue(startInSeconds);
-
 
     const int cycleStart = startInSeconds * _clock.getRate();
     const int cycleEnd = endInSeconds * _clock.getRate();
@@ -202,5 +205,9 @@ unsigned char SquareWaveSoundEvent::getVolumeAt(float currentTime) const
         )
     );
 }
+
+template void ChannelBase<SquareWaveSoundEvent>::updateEventsQueue(
+    const float audioFrameStartInSeconds
+);
 
 }

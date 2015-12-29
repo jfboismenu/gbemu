@@ -93,16 +93,17 @@ namespace {
         const bool          setTo )
     {
         bool allButtonsPressed = toupper( key ) == 'R';
-        if ( toupper( key ) == 'Z' || allButtonsPressed ) {
+        bool selectStartB = toupper( key ) == 'M';
+        if ( toupper( key ) == 'Z' || allButtonsPressed || selectStartB ) {
             bPressed = setTo;
         }
         if ( toupper( key ) == 'X' || allButtonsPressed ) {
             aPressed = setTo;
         }
-        if ( toupper( key ) == 'A' || allButtonsPressed ) {
+        if ( toupper( key ) == 'A' || allButtonsPressed || selectStartB ) {
             selectPressed = setTo;
         }
-        if ( toupper( key ) == 'S' || allButtonsPressed ) {
+        if ( toupper( key ) == 'S' || allButtonsPressed || selectStartB ) {
             startPressed = setTo;
         }
     }

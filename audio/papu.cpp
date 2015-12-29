@@ -13,6 +13,11 @@ void PAPU::renderAudio(void* output, const unsigned long frameCount, const int r
     reinterpret_cast<PAPU*>(userData)->renderAudioInternal(output, frameCount, rate);
 }
 
+bool PAPU::contains( unsigned short addr ) const
+{
+    return kSoundRegistersStart <= addr && addr <= kSoundRegistersEnd;
+}
+
 PAPU::PAPU( const Clock& clock ) : 
     _clock( clock ),
     _squareWaveChannel1( clock, kNR10, kNR11, kNR12, kNR13, kNR14 ),
@@ -49,6 +54,7 @@ void PAPU::writeByte(
 {
     // When _nr52 all sound on bit is set to 0, we can't write to most registers
     if ( !isRegisterAvailable( addr ) ) {
+        // std::cout << "not available " << std::hex << addr << std::dec << std::endl;
         return;
     }
     if ( addr == kNR52 ) {
@@ -83,13 +89,15 @@ void PAPU::writeByte(
     }
     else if ( _waveChannel.contains( addr ) ) {
         _waveChannel.writeByte( addr, value );
-//        JFX_LOG("Untracked write at " << std::hex << addr);
+    } else {
+        std::cout << "Untracked PAPU write at " << std::hex << addr << std::dec << std::endl;
     }
 }
 
 unsigned char PAPU::readByte( unsigned short addr ) const
 {
     if ( !isRegisterAvailable( addr ) ) {
+        // std::cout << "not available " << std::hex << addr << std::dec << std::endl;
         return 0;
     }
     if ( addr == kNR52 )
@@ -103,7 +111,7 @@ unsigned char PAPU::readByte( unsigned short addr ) const
         }
     }
     else {
-//        JFX_LOG("Untracked read at " << std::hex << addr);
+        JFX_LOG("Untracked read at " << std::hex << addr);
     }
     return 0;
 }
@@ -115,8 +123,12 @@ float PAPU::getCurrentPlaybackTime() const
 
 bool PAPU::isRegisterAvailable( const unsigned short addr ) const
 {
-    // NR52 is always available. However, if it's off and we are accessing a non wave-pattern address, we can't access them.
-    return _initializing || addr == kNR52 || !( ( _nr52.bits._allSoundOn == 0 ) && ( 0xFF10 <= addr ) && ( addr <= 0xFF2F ) );
+    //  However, if it's off and we are accessing a non wave-pattern address, we can't access them.
+    return _initializing || 
+        addr == kNR52 || // NR52 is always available.
+        _nr52.bits._allSoundOn == 1 || // Register is available if sound chip is on.
+        // Only wave pattern is accessible when audio register is on.
+        (kWavePatternRAMStart <= addr && addr < kWavePatternRAMEnd);
 }
 
 void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, const int rate)
@@ -124,9 +136,15 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
     _rate = rate;
     float realTime(float(_currentPlaybackTime)/_rate);
 
+    // Update sound event queue.
+    _squareWaveChannel1.updateEventsQueue(realTime);
+    _squareWaveChannel2.updateEventsQueue(realTime);
+    _waveChannel.updateEventsQueue(realTime);
+
+    // Render audio to the output buffer.
     _squareWaveChannel1.renderAudio(output, frameCount, rate, realTime);
     _squareWaveChannel2.renderAudio(output, frameCount, rate, realTime);
-    _waveChannel.renderAudio(output, frameCount, rate, realTime);
+    //_waveChannel.renderAudio(output, frameCount, rate, realTime);
 
     _currentPlaybackTime += frameCount;
 }

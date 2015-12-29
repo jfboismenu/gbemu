@@ -8,7 +8,7 @@
 namespace {
     float gbNoteToFrequency(const int gbNote)
     {
-        return 131072.f / (2048 - gbNote);
+        return 65536.f / (2048 - gbNote);
     }
 }
 
@@ -37,6 +37,30 @@ bool WaveChannel::contains(unsigned short addr) const
     }
 }
 
+char WaveChannel::computeSample(
+    float frequency,
+    float timeSinceNoteStart,
+    const WavePatternSamples& samples,
+    const char volumeShift
+) const
+{
+    const float cycleLength = 1 / frequency;
+    // Compute how many times the sound has played, including fractions.
+    const float howManyTimes = timeSinceNoteStart / cycleLength;
+    // Compute how many times the sound has completely played.
+    const float howManyTimesCompleted = int(howManyTimes);
+    // Compute how far we are in the current cycle.
+    const float howManyInCurrent = (howManyTimes - howManyTimesCompleted);
+
+    const int sampleIdx = howManyInCurrent * 32;
+    const int samplePos = sampleIdx / 2;
+    const int sampleNibble = sampleIdx % 2;
+
+    const unsigned char nibble = (sampleNibble == 0) ? (samples[samplePos] >> 4) : (samples[samplePos] & 0xf);
+
+    return ( static_cast< char >( nibble ) - 8 )>> volumeShift;
+}
+
 void WaveChannel::renderAudio(
     void* raw_output,
     const unsigned long frameCount,
@@ -49,8 +73,6 @@ void WaveChannel::renderAudio(
     // Convert the start and end to seconds.
     const float startInSeconds = realTime;
     const float endInSeconds = realTime + (float(frameCount) / rate);
-    updateEventsQueue(startInSeconds);
-
 
     const int cycleStart = startInSeconds * _clock.getRate();
     const int cycleEnd = endInSeconds * _clock.getRate();
@@ -79,12 +101,12 @@ void WaveChannel::renderAudio(
         }
         if (_soundEvents[currentEvent].isPlaying) {
             const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
-            output[i] += 0;
-            /*computeSample(
-                _soundEvents[currentEvent].waveFrequency, 
+            output[ i ] += computeSample(
+                _soundEvents[currentEvent].waveFrequency,
                 timeSinceEventStart,
-                _soundEvents[currentEvent].waveDuty
-            ) * _soundEvents[currentEvent].getVolumeAt(frameTimeInSeconds);*/
+                _soundEvents[currentEvent].samples,
+                _soundEvents[currentEvent].getVolumeShift()
+            );
         }
     }
 }
@@ -101,42 +123,38 @@ void WaveChannel::writeByte(
 {
     if ( addr == kNR30 ) {
         _rOnOff.write(value);
-        JFX_LOG("-----NR30-ff1a-----");
-        JFX_LOG("On/Off : " << (_rOnOff.bits.isOn() ? "On": "Off"));
     } else if ( addr == kNR31 ) {
         _rSoundLength.write(value);
-        JFX_LOG("-----NR31-ff1b-----");
-        JFX_LOG("Sound length : " << _rSoundLength.bits.getSoundLength() << " seconds");
     } else if ( addr == kNR32 ) {
         _rVolume.write(value);
-        JFX_LOG("-----NR32-ff1c-----");
-        JFX_LOG("Volume shift : " << (int)_rVolume.bits.getVolumeShift());
     } else if ( addr == kNR33 ) {
-        JFX_LOG("-----NR33-ff1d-----");
-        JFX_LOG("Frequency lo : " << (int)_rFrequencyLo.bits.freqLo);
         _rFrequencyLo.write(value);
     } else if ( addr >= kWavePatternRAMStart && addr < kWavePatternRAMEnd ) {
-        JFX_LOG("-----Wave-pattern-ram----");
-        _wavePatternPtr[ addr ] = static_cast< char >( value );
-        JFX_LOG((int)_wavePatternPtr[ addr ] << " -> " << std::hex << addr);
+        _wavePatternPtr[ addr ] = value;
     } else if ( addr == kNR34 ) {
         _rFrequencyHiPlayback.write( value );
-        JFX_LOG("-----NR34-ff1e-----");
-        JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
-        JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
-        JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
+        const int gbNote = getGbNote();
+        const float frequency(gbNoteToFrequency(gbNote));
+        // JFX_LOG("-----NR34-ff1e-----");
+        // JFX_LOG("On/Off : " << (_rOnOff.bits.isOn() ? "On": "Off"));
+        // JFX_LOG("Sound length : " << _rSoundLength.bits.getSoundLength() << " seconds");
+        // JFX_LOG("Volume shift : " << (int)_rVolume.bits.getVolumeShift());
+        // JFX_LOG("Frequency    : " << frequency);
+        // JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
+        // JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
         // Push a new sound event in a thread-safe manner.
         std::lock_guard<std::mutex> lock(_mutex);
-        const int gbNote = getGbNote();
+
         JFX_CMP_ASSERT(2048 - gbNote, >, 0);
         _soundEvents[_lastEvent] = WaveSoundEvent(
             _rFrequencyHiPlayback.bits.initialize == 1,
             _rFrequencyHiPlayback.bits.isLooping(),
-            gbNoteToFrequency(gbNote),
+            frequency,
             _clock.getTimeInCycles(),
             _clock.getTimeInSeconds(),
             _rSoundLength.bits.getSoundLength(),
+            _rVolume.bits.getVolumeShift(),
             _wavePattern
         );
         ++_lastEvent;
@@ -151,9 +169,20 @@ WaveSoundEvent::WaveSoundEvent(
     int64_t ws,
     float wsis,
     float wlis,
-    const WavePatternSamples& samples
+    char vs,
+    const WavePatternSamples& s
 ) : SoundEventBase(ip, il, wf, ws, wsis, wlis),
-    _samples(samples)
+    _volumeShift(vs),
+    samples(s)
 {}
+
+char WaveSoundEvent::getVolumeShift() const
+{
+    return _volumeShift;
+}
+
+template void ChannelBase<WaveSoundEvent>::updateEventsQueue(
+    const float audioFrameStartInSeconds
+);
 
 }

@@ -89,6 +89,9 @@ namespace gbemu {
         if ( VideoDisplay::isVideoMemory( addr ) ) {
             return _videoDisplay.readByte( addr );
         }
+        if ( _papu.contains( addr ) ) {
+            return _papu.readByte( addr );
+        }
         if ( _timers.contains( addr ) ) {
             return _timers.readByte( addr );
         }
@@ -156,7 +159,7 @@ P13-------O-Down-----O-Start ---- bit 3
             else if ( addr == kIF ) {
                 _bytes[ addr ] = value;
             }
-            else if ( kSoundRegistersStart <= addr && addr <= kSoundRegistersEnd ) {
+            else if ( _papu.contains( addr ) ) {
                 _papu.writeByte( addr, value );
             }
             else {
