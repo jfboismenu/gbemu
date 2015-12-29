@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audio/squareWaveChannel.h>
+#include <audio/waveChannel.h>
 #include <common/register.h>
 #include <mutex>
 
@@ -62,34 +63,7 @@ namespace gbemu {
 
         SquareWaveChannel  _squareWaveChannel1;
         SquareWaveChannel  _squareWaveChannel2;
-
-        /* To be refactored when we address the noise and wave channel
-        class SoundLengthBits : private SoundLengthWavePatternDutyBits
-        {
-        public:
-            unsigned char getSoundLength()
-            {
-                return SoundLengthWavePatternDutyBits::getSoundLength();
-            }
-        };
-
-
-        class NoiseEnveloppeBits : private EnveloppeBits
-        {
-        public:
-            unsigned char getInitialVolume()
-            {
-                return initialVolume;
-            }
-            bool isAmplifying() const
-            {
-                return EnveloppeBits::isAmplifying();
-            }
-        };
-
-        Register< EnveloppeBits > _nr32;
-        Register< SoundLengthBits, 0xB0, 0xFF > _nr41;
-        Register< NoiseEnveloppeBits > _nr42;*/
+        WaveChannel        _waveChannel;
 
         Register< MainVolumeOutputControlBits > _nr50;
         Register< SoundOutputTerminalSelect > _nr51;

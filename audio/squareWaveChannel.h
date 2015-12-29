@@ -114,6 +114,7 @@ namespace gbemu {
             unsigned short frequencyLowRegisterAddr,
             unsigned short frequencyHiRegisterAddr
         );
+        bool contains(unsigned short addr) const;
         void renderAudio(void* output, const unsigned long frameCount, const int rate, const float realTime);
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;

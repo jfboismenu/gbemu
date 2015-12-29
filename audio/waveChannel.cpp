@@ -1,16 +1,41 @@
 #include <audio/waveChannel.h>
+#include <cpu/registers.h>
 #include <audio/channelBase.imp.h>
 #include <base/cyclicCounter.imp.h>
 #include <base/clock.h>
 #include <base/logger.h>
+
+namespace {
+    float gbNoteToFrequency(const int gbNote)
+    {
+        return 131072.f / (2048 - gbNote);
+    }
+}
 
 namespace gbemu {
 
 WaveChannel::WaveChannel(
     const Clock& clock
 ) :
-    ChannelBase(clock)
+    ChannelBase(clock),
+    _wavePatternPtr(&_wavePattern[ 0 ] - kWavePatternRAMStart)
 {}
+
+bool WaveChannel::contains(unsigned short addr) const
+{
+    switch(addr) {
+        case kNR30:
+        case kNR31:
+        case kNR32:
+        case kNR33:
+        case kNR34:
+            // All the registers for this channel.
+            return true;
+        default:
+            // Wave pattern memory location.
+            return addr >= kWavePatternRAMStart && addr < kWavePatternRAMEnd;
+    }
+}
 
 void WaveChannel::renderAudio(
     void* raw_output,
@@ -64,37 +89,71 @@ void WaveChannel::renderAudio(
     }
 }
 
+short WaveChannel::getGbNote() const
+{
+    return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
+}
+
 void WaveChannel::writeByte(
     const unsigned short addr,
     const unsigned char value
 )
 {
-    // {
-    //     _rFrequencyHiPlayback.write( value );
-    //     // JFX_LOG("-----NR14-ff14-----");
-    //     // JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
-    //     // JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
-    //     // JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
+    if ( addr == kNR30 ) {
+        _rOnOff.write(value);
+        JFX_LOG("-----NR30-ff1a-----");
+        JFX_LOG("On/Off : " << (_rOnOff.bits.isOn() ? "On": "Off"));
+    } else if ( addr == kNR31 ) {
+        _rSoundLength.write(value);
+        JFX_LOG("-----NR31-ff1b-----");
+        JFX_LOG("Sound length : " << _rSoundLength.bits.getSoundLength() << " seconds");
+    } else if ( addr == kNR32 ) {
+        _rVolume.write(value);
+        JFX_LOG("-----NR32-ff1c-----");
+        JFX_LOG("Volume shift : " << (int)_rVolume.bits.getVolumeShift());
+    } else if ( addr == kNR33 ) {
+        JFX_LOG("-----NR33-ff1d-----");
+        JFX_LOG("Frequency lo : " << (int)_rFrequencyLo.bits.freqLo);
+        _rFrequencyLo.write(value);
+    } else if ( addr >= kWavePatternRAMStart && addr < kWavePatternRAMEnd ) {
+        JFX_LOG("-----Wave-pattern-ram----");
+        _wavePatternPtr[ addr ] = static_cast< char >( value );
+        JFX_LOG((int)_wavePatternPtr[ addr ] << " -> " << std::hex << addr);
+    } else if ( addr == kNR34 ) {
+        _rFrequencyHiPlayback.write( value );
+        JFX_LOG("-----NR34-ff1e-----");
+        JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
+        JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
+        JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
-    //     // Push a new sound event in a thread-safe manner.
-    //     std::lock_guard<std::mutex> lock(_mutex);
-    //     const int gbNote = getGbNote();
-    //     JFX_CMP_ASSERT(2048 - gbNote, >, 0);
-    //     _soundEvents[_lastEvent] = SquareWaveSoundEvent(
-    //         _rFrequencyHiPlayback.bits.initialize == 1,
-    //         _rFrequencyHiPlayback.bits.isLooping(),
-    //         gbNoteToFrequency(gbNote),
-    //         _clock.getTimeInCycles(),
-    //         _clock.getTimeInSeconds(),
-    //         _rLengthDuty.bits.getSoundLength(),
-    //         _rLengthDuty.bits.getWaveDutyPercentage(),
-    //         _rEnveloppe.bits.initialVolume,
-    //         _rEnveloppe.bits.isAmplifying(),
-    //         _rEnveloppe.bits.getSweepLength()
-    //     );
-    //     ++_lastEvent;
-    //     JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
-    // }
+        // Push a new sound event in a thread-safe manner.
+        std::lock_guard<std::mutex> lock(_mutex);
+        const int gbNote = getGbNote();
+        JFX_CMP_ASSERT(2048 - gbNote, >, 0);
+        _soundEvents[_lastEvent] = WaveSoundEvent(
+            _rFrequencyHiPlayback.bits.initialize == 1,
+            _rFrequencyHiPlayback.bits.isLooping(),
+            gbNoteToFrequency(gbNote),
+            _clock.getTimeInCycles(),
+            _clock.getTimeInSeconds(),
+            _rSoundLength.bits.getSoundLength(),
+            _wavePattern
+        );
+        ++_lastEvent;
+        JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
+    }
 }
+
+WaveSoundEvent::WaveSoundEvent(
+    bool ip,
+    bool il,
+    int wf,
+    int64_t ws,
+    float wsis,
+    float wlis,
+    const WavePatternSamples& samples
+) : SoundEventBase(ip, il, wf, ws, wsis, wlis),
+    _samples(samples)
+{}
 
 }

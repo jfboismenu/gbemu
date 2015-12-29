@@ -9,7 +9,6 @@ namespace {
     {
         return 131072.f / (2048 - gbNote);
     }
-
 }
 
 namespace gbemu {
@@ -29,6 +28,15 @@ SquareWaveChannel::SquareWaveChannel(
     _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
     _frequencyHiRegisterAddr(frequencyHiRegisterAddr)
 {}
+
+bool SquareWaveChannel::contains(unsigned short addr) const
+{
+    return addr == _frequencySweepRegisterAddr ||
+        addr == _soundLengthRegisterAddr ||
+        addr == _evenloppeRegisterAddr ||
+        addr == _frequencyLowRegisterAddr ||
+        addr == _frequencyHiRegisterAddr;
+}
 
 char SquareWaveChannel::computeSample(
     float frequency,
