@@ -82,7 +82,6 @@ namespace gbemu {
     {
     public:
         SquareWaveSoundEvent(
-            bool ip,
             bool il,
             int wf,
             int64_t ws,
@@ -97,7 +96,7 @@ namespace gbemu {
         float waveDuty;
 
         unsigned char getVolumeAt(float currentTime) const;
-    private:
+
         char waveVolume;
         bool isVolumeAmplifying;
         float sweepLength;
@@ -119,7 +118,8 @@ namespace gbemu {
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
     private:
-
+        SquareWaveSoundEvent cloneLastEvent() const;
+        void insertEvent(const SquareWaveSoundEvent& event);
         char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
         short getGbNote() const;
 

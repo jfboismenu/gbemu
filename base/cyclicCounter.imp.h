@@ -1,6 +1,7 @@
 #pragma once
 
 #include <base/cyclicCounter.h>
+#include <iostream> 
 
 namespace gbemu {
 
@@ -20,7 +21,7 @@ template<int CycleLength>
 CyclicCounter<CycleLength> CyclicCounter<CycleLength>::operator+(int i) const
 {
     CyclicCounter<CycleLength> counter(*this);
-    counter._count = (counter._count + i) % CycleLength;
+    ++counter;
     return counter;
 }
 
@@ -28,7 +29,10 @@ template<int CycleLength>
 CyclicCounter<CycleLength> CyclicCounter<CycleLength>::operator-(int i) const
 {
     CyclicCounter<CycleLength> counter(*this);
-    counter._count = (counter._count - i) % CycleLength;
+    --counter._count;
+    if (counter._count < 0) {
+        counter._count += CycleLength;
+    }
     return counter;
 }
 

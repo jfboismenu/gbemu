@@ -55,7 +55,6 @@ namespace gbemu {
     public:
         WaveSoundEvent() = default;
         WaveSoundEvent(
-            bool ip,
             bool il,
             int wf,
             int64_t ws,

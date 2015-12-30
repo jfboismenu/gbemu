@@ -99,15 +99,13 @@ void WaveChannel::renderAudio(
             // If we still haven't reached the first note, play nothing.
             continue;
         }
-        if (_soundEvents[currentEvent].isPlaying) {
-            const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
-            output[ i ] += computeSample(
-                _soundEvents[currentEvent].waveFrequency,
-                timeSinceEventStart,
-                _soundEvents[currentEvent].samples,
-                _soundEvents[currentEvent].getVolumeShift()
-            );
-        }
+        const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
+        output[ i ] += computeSample(
+            _soundEvents[currentEvent].waveFrequency,
+            timeSinceEventStart,
+            _soundEvents[currentEvent].samples,
+            _soundEvents[currentEvent].getVolumeShift()
+        );
     }
 }
 
@@ -148,7 +146,6 @@ void WaveChannel::writeByte(
 
         JFX_CMP_ASSERT(2048 - gbNote, >, 0);
         _soundEvents[_lastEvent] = WaveSoundEvent(
-            _rFrequencyHiPlayback.bits.initialize == 1,
             _rFrequencyHiPlayback.bits.isLooping(),
             frequency,
             _clock.getTimeInCycles(),
@@ -163,7 +160,6 @@ void WaveChannel::writeByte(
 }
 
 WaveSoundEvent::WaveSoundEvent(
-    bool ip,
     bool il,
     int wf,
     int64_t ws,
@@ -171,7 +167,7 @@ WaveSoundEvent::WaveSoundEvent(
     float wlis,
     char vs,
     const WavePatternSamples& s
-) : SoundEventBase(ip, il, wf, ws, wsis, wlis),
+) : SoundEventBase(il, wf, ws, wsis, wlis),
     _volumeShift(vs),
     samples(s)
 {}

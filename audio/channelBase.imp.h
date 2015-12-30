@@ -3,6 +3,7 @@
 #include <audio/channelBase.h>
 #include <base/cyclicCounter.imp.h>
 #include <base/clock.h>
+#include <iostream>
 
 namespace gbemu {
 
@@ -29,7 +30,7 @@ void ChannelBase<SoundEventType>::updateEventsQueue(
              // If this is not the last event, the next event might silence this one?
             if (i + 1 != _playbackLastEvent) {
                 // if that next event starts before the current audio
-                if (_soundEvents[i + 1].waveStartInSeconds < audioFrameStartInSeconds) {
+                if (_soundEvents[i + 1].timeStamp < audioFrameStartInSeconds) {
                     ++_firstEvent;
                 } else {
                     // The next event starts after the current playback interval,

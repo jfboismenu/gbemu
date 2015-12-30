@@ -27,7 +27,6 @@ namespace gbemu {
     struct SoundEventBase
     {
         SoundEventBase(
-            bool ip,
             bool il,
             int wf,
             int64_t ws,
@@ -37,11 +36,12 @@ namespace gbemu {
         SoundEventBase() = default;
         float waveEndInSeconds() const;
 
-        bool isPlaying;
         bool isLooping;
         int waveFrequency;
         int waveStart;
         float waveStartInSeconds;
         float waveLengthInSeconds;
+
+        float timeStamp;
     };
 }

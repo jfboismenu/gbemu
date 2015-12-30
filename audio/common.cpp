@@ -4,14 +4,12 @@
 namespace gbemu {
 
 SoundEventBase::SoundEventBase(
-    bool ip,
     bool il,
     int wf,
     int64_t ws,
     float wsis,
     float wlis
-) : isPlaying(ip),
-    isLooping(il),
+) : isLooping(il),
     waveFrequency(wf),
     waveStart(ws),
     waveStartInSeconds(wsis),

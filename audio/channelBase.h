@@ -18,7 +18,7 @@ namespace gbemu {
 
         const Clock&                                           _clock;
 
-        enum {BUFFER_SIZE = 32};
+        enum {BUFFER_SIZE = 512};
 
         std::array<SoundEventType, BUFFER_SIZE> _soundEvents;
 
