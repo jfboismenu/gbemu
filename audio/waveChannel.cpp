@@ -154,6 +154,7 @@ void WaveChannel::writeByte(
             _rVolume.bits.getVolumeShift(),
             _wavePattern
         );
+        _soundEvents[_lastEvent].timeStamp = _clock.getTimeInSeconds();
         ++_lastEvent;
         JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
     }

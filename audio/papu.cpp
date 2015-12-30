@@ -144,7 +144,7 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
     // Render audio to the output buffer.
     _squareWaveChannel1.renderAudio(output, frameCount, rate, realTime);
     _squareWaveChannel2.renderAudio(output, frameCount, rate, realTime);
-    //_waveChannel.renderAudio(output, frameCount, rate, realTime);
+    _waveChannel.renderAudio(output, frameCount, rate, realTime);
 
     _currentPlaybackTime += frameCount;
 }

@@ -177,21 +177,6 @@ void SquareWaveChannel::writeByte(
     }
 }
 
-SquareWaveSoundEvent SquareWaveChannel::cloneLastEvent() const
-{
-    SquareWaveSoundEvent event(_soundEvents[_lastEvent - 1]);
-    event.timeStamp = _clock.getTimeInSeconds();
-    return event;
-}
-
-void SquareWaveChannel::insertEvent(const SquareWaveSoundEvent& event)
-{
-    std::lock_guard<std::mutex> lock(_mutex);
-    _soundEvents[_lastEvent] = event;
-    ++_lastEvent;
-    JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
-}
-
 short SquareWaveChannel::getGbNote() const
 {
     return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );

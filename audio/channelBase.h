@@ -14,11 +14,13 @@ namespace gbemu {
     public:
         void updateEventsQueue(const float audioFrameStartInSeconds);
     protected:
+        SoundEventType cloneLastEvent() const;
+        void insertEvent(const SoundEventType& event);
         ChannelBase(const Clock& clock);
 
         const Clock&                                           _clock;
 
-        enum {BUFFER_SIZE = 512};
+        enum {BUFFER_SIZE = 32};
 
         std::array<SoundEventType, BUFFER_SIZE> _soundEvents;
 

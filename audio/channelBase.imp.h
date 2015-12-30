@@ -3,7 +3,7 @@
 #include <audio/channelBase.h>
 #include <base/cyclicCounter.imp.h>
 #include <base/clock.h>
-#include <iostream>
+#include <common/common.h>
 
 namespace gbemu {
 
@@ -16,6 +16,24 @@ ChannelBase<SoundEventType>::ChannelBase(
     _lastEvent(0),
     _playbackLastEvent(0)
 {}
+
+template< typename SoundEventType >
+SoundEventType ChannelBase<SoundEventType>::cloneLastEvent() const
+{
+    SoundEventType event(_soundEvents[_lastEvent - 1]);
+    event.timeStamp = _clock.getTimeInSeconds();
+    return event;
+}
+
+template< typename SoundEventType >
+void ChannelBase<SoundEventType>::insertEvent(const SoundEventType& event)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    _soundEvents[_lastEvent] = event;
+    ++_lastEvent;
+    JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
+}
+
 
 template< typename SoundEventType >
 void ChannelBase<SoundEventType>::updateEventsQueue(
