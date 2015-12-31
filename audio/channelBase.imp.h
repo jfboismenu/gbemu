@@ -18,14 +18,6 @@ ChannelBase<SoundEventType>::ChannelBase(
 {}
 
 template< typename SoundEventType >
-SoundEventType ChannelBase<SoundEventType>::cloneLastEvent() const
-{
-    SoundEventType event(_soundEvents[_lastEvent - 1]);
-    event.timeStamp = _clock.getTimeInSeconds();
-    return event;
-}
-
-template< typename SoundEventType >
 void ChannelBase<SoundEventType>::insertEvent(const SoundEventType& event)
 {
     std::lock_guard<std::mutex> lock(_mutex);

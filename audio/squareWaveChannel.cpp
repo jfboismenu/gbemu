@@ -119,27 +119,12 @@ void SquareWaveChannel::writeByte(
     }
     else if ( addr == _soundLengthRegisterAddr ) {
         _rLengthDuty.write( value );
-
-        SquareWaveSoundEvent event(cloneLastEvent());
-        event.waveLengthInSeconds = _rLengthDuty.bits.getSoundLength();
-        event.waveDuty = _rLengthDuty.bits.getWaveDutyPercentage();
-
-        insertEvent(event);
-        
         JFX_LOG("-----NR11-ff11-----");
         JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
         JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
     }
     else if ( addr == _evenloppeRegisterAddr ) {
         _rEnveloppe.write( value );
-
-        SquareWaveSoundEvent event(cloneLastEvent());
-        event.waveVolume = _rEnveloppe.bits.initialVolume;
-        event.isVolumeAmplifying = _rEnveloppe.bits.isAmplifying(),
-        event.sweepLength = _rEnveloppe.bits.getSweepLength();
-
-        insertEvent(event);
-
         JFX_LOG("-----NR12-ff12-----");
         JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
         JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
@@ -147,32 +132,39 @@ void SquareWaveChannel::writeByte(
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
-
-        SquareWaveSoundEvent event(cloneLastEvent());
-        event.waveFrequency = gbNoteToFrequency(getGbNote());
-
-        insertEvent(event);
         JFX_LOG("-----NR13-ff13-----");
         JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
     }
     else if ( addr == _frequencyHiRegisterAddr ) {
-        _rFrequencyHiPlayback.write( value );
+        _rFrequencyHiPlayback.write(value);
         JFX_LOG("-----NR14-ff14-----");
         JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
         JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
         JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
-        // Clone the last event.
-        SquareWaveSoundEvent event(cloneLastEvent());
         // We are reinitializating the counters, so snapshot current
         // time.
+        int64_t waveStart;
+        float waveStartInSeconds;
         if (_rFrequencyHiPlayback.bits.initialize) {
-            event.waveStart = _clock.getTimeInCycles();
-            event.waveStartInSeconds = _clock.getTimeInSeconds();
+            waveStart = _clock.getTimeInCycles();
+            waveStartInSeconds = _clock.getTimeInSeconds();
+        } else {
+            waveStart = _soundEvents[_lastEvent - 1].waveStart;
+            waveStartInSeconds = _soundEvents[_lastEvent - 1].waveStartInSeconds;
         }
-        event.waveFrequency = gbNoteToFrequency(getGbNote());
-        event.isLooping = _rFrequencyHiPlayback.bits.isLooping();
-
+        // Clone the last event.
+        const SquareWaveSoundEvent event(
+            _rFrequencyHiPlayback.bits.isLooping(),
+            gbNoteToFrequency(getGbNote()),
+            waveStart,
+            waveStartInSeconds,
+            _rLengthDuty.bits.getSoundLength(),
+            _rLengthDuty.bits.getWaveDutyPercentage(),
+            _rEnveloppe.bits.initialVolume,
+            _rEnveloppe.bits.isAmplifying(),
+            _rEnveloppe.bits.getSweepLength()
+        );
         insertEvent(event);
     }
 }

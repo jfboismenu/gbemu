@@ -14,7 +14,6 @@ namespace gbemu {
     public:
         void updateEventsQueue(const float audioFrameStartInSeconds);
     protected:
-        SoundEventType cloneLastEvent() const;
         void insertEvent(const SoundEventType& event);
         ChannelBase(const Clock& clock);
 

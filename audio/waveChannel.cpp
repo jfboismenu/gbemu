@@ -8,6 +8,7 @@
 namespace {
     float gbNoteToFrequency(const int gbNote)
     {
+        JFX_CMP_ASSERT(2048 - gbNote, >, 0);
         return 65536.f / (2048 - gbNote);
     }
 }
@@ -131,8 +132,6 @@ void WaveChannel::writeByte(
         _wavePatternPtr[ addr ] = value;
     } else if ( addr == kNR34 ) {
         _rFrequencyHiPlayback.write( value );
-        const int gbNote = getGbNote();
-        const float frequency(gbNoteToFrequency(gbNote));
         // JFX_LOG("-----NR34-ff1e-----");
         // JFX_LOG("On/Off : " << (_rOnOff.bits.isOn() ? "On": "Off"));
         // JFX_LOG("Sound length : " << _rSoundLength.bits.getSoundLength() << " seconds");
@@ -141,15 +140,24 @@ void WaveChannel::writeByte(
         // JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
         // JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
+        int64_t waveStart;
+        float waveStartInSeconds;
+        if (_rFrequencyHiPlayback.bits.initialize) {
+            waveStart = _clock.getTimeInCycles();
+            waveStartInSeconds = _clock.getTimeInSeconds();
+        } else {
+            waveStart = _soundEvents[_lastEvent - 1].waveStart;
+            waveStartInSeconds = _soundEvents[_lastEvent - 1].waveStartInSeconds;
+        }
+
         // Push a new sound event in a thread-safe manner.
         std::lock_guard<std::mutex> lock(_mutex);
 
-        JFX_CMP_ASSERT(2048 - gbNote, >, 0);
         _soundEvents[_lastEvent] = WaveSoundEvent(
             _rFrequencyHiPlayback.bits.isLooping(),
-            frequency,
-            _clock.getTimeInCycles(),
-            _clock.getTimeInSeconds(),
+            gbNoteToFrequency(getGbNote()),
+            waveStart,
+            waveStartInSeconds,
             _rSoundLength.bits.getSoundLength(),
             _rVolume.bits.getVolumeShift(),
             _wavePattern
