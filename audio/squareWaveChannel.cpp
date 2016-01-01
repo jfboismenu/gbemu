@@ -88,7 +88,7 @@ void SquareWaveChannel::writeByte(
             waveStartInSeconds = _soundEvents[_lastEvent - 1].waveStartInSeconds;
         }
         // Clone the last event.
-        const SquareWaveSoundEvent event(
+        const SquareWaveChannelState event(
             _rFrequencyHiPlayback.bits.isLooping(),
             gbNoteToFrequency(getGbNote()),
             waveStart,
@@ -108,7 +108,7 @@ short SquareWaveChannel::getGbNote() const
     return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
 }
 
-SquareWaveSoundEvent::SquareWaveSoundEvent(
+SquareWaveChannelState::SquareWaveChannelState(
     bool il,
     float wf,
     int64_t ws,
@@ -118,14 +118,14 @@ SquareWaveSoundEvent::SquareWaveSoundEvent(
     char v,
     bool va,
     float sl
-) : SoundEventBase(il, wf, ws, wsis, wlis),
+) : WaveChannelStateBase(il, wf, ws, wsis, wlis),
     waveDuty(d),
     waveVolume(v),
     isVolumeAmplifying(va),
     sweepLength(sl)
 {}
 
-unsigned char SquareWaveSoundEvent::getVolumeAt(float currentTime) const
+unsigned char SquareWaveChannelState::getVolumeAt(float currentTime) const
 {
     // Sweep length is zero, so don't amplify or reduce volume.
     if (sweepLength == 0.f) {
@@ -144,7 +144,7 @@ unsigned char SquareWaveSoundEvent::getVolumeAt(float currentTime) const
     );
 }
 
-char SquareWaveSoundEvent::computeSample(
+char SquareWaveChannelState::computeSample(
     float frameTimeInSeconds
 ) const
 {
@@ -166,6 +166,6 @@ char SquareWaveSoundEvent::computeSample(
 }
 
 
-template class ChannelBase<SquareWaveChannel, SquareWaveSoundEvent>;
+template class ChannelBase<SquareWaveChannel, SquareWaveChannelState>;
 
 }

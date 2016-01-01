@@ -82,7 +82,7 @@ void WaveChannel::writeByte(
         // Push a new sound event in a thread-safe manner.
         std::lock_guard<std::mutex> lock(_mutex);
 
-        _soundEvents[_lastEvent] = WaveSoundEvent(
+        _soundEvents[_lastEvent] = WaveChannelState(
             _rFrequencyHiPlayback.bits.isLooping(),
             gbNoteToFrequency(getGbNote()),
             waveStart,
@@ -97,7 +97,7 @@ void WaveChannel::writeByte(
     }
 }
 
-WaveSoundEvent::WaveSoundEvent(
+WaveChannelState::WaveChannelState(
     bool il,
     float wf,
     int64_t ws,
@@ -105,12 +105,12 @@ WaveSoundEvent::WaveSoundEvent(
     float wlis,
     char vs,
     const WavePatternSamples& s
-) : SoundEventBase(il, wf, ws, wsis, wlis),
+) : WaveChannelStateBase(il, wf, ws, wsis, wlis),
     _volumeShift(vs),
     samples(s)
 {}
 
-char WaveSoundEvent::computeSample(
+char WaveChannelState::computeSample(
     float frameTimeInSeconds
 ) const
 {
@@ -133,6 +133,6 @@ char WaveSoundEvent::computeSample(
     return ( static_cast< char >( nibble ) - 8 ) >> _volumeShift;
 }
 
-template class ChannelBase<WaveChannel, WaveSoundEvent>;
+template class ChannelBase<WaveChannel, WaveChannelState>;
 
 }

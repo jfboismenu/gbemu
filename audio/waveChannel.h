@@ -50,11 +50,11 @@ namespace gbemu {
 
     using WavePatternSamples = std::array< unsigned char, kWavePatternRAMEnd - kWavePatternRAMStart >;
 
-    class WaveSoundEvent: public SoundEventBase
+    class WaveChannelState: public WaveChannelStateBase
     {
     public:
-        WaveSoundEvent() = default;
-        WaveSoundEvent(
+        WaveChannelState() = default;
+        WaveChannelState(
             bool il,
             float wf,
             int64_t ws,
@@ -70,7 +70,7 @@ namespace gbemu {
         char               _volumeShift;
     };
 
-    class WaveChannel : public ChannelBase<WaveChannel, WaveSoundEvent>
+    class WaveChannel : public ChannelBase<WaveChannel, WaveChannelState>
     {
     public:
         WaveChannel(

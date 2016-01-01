@@ -78,10 +78,10 @@ namespace gbemu {
         unsigned char _sweepLength: 4;
     };
 
-    class SquareWaveSoundEvent : public SoundEventBase
+    class SquareWaveChannelState : public WaveChannelStateBase
     {
     public:
-        SquareWaveSoundEvent(
+        SquareWaveChannelState(
             bool il,
             float wf,
             int64_t ws,
@@ -93,7 +93,7 @@ namespace gbemu {
             float sl
         );
         char computeSample(float frameTime) const;
-        SquareWaveSoundEvent() = default;
+        SquareWaveChannelState() = default;
         float waveDuty;
 
         unsigned char getVolumeAt(float currentTime) const;
@@ -104,7 +104,7 @@ namespace gbemu {
         float sweepLength;
     };
 
-    class SquareWaveChannel : public ChannelBase<SquareWaveChannel, SquareWaveSoundEvent>
+    class SquareWaveChannel : public ChannelBase<SquareWaveChannel, SquareWaveChannelState>
     {
     public:
         SquareWaveChannel(

@@ -24,16 +24,16 @@ namespace gbemu {
         unsigned char initialize : 1;
     };
 
-    struct SoundEventBase
+    struct WaveChannelStateBase
     {
-        SoundEventBase(
+        WaveChannelStateBase(
             bool il,
             float wf,
             int64_t ws,
             float wsis,
             float wlis
         );
-        SoundEventBase() = default;
+        WaveChannelStateBase() = default;
         float waveEndInSeconds() const;
 
         bool isLooping;

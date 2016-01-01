@@ -3,7 +3,7 @@
 
 namespace gbemu {
 
-SoundEventBase::SoundEventBase(
+WaveChannelStateBase::WaveChannelStateBase(
     bool il,
     float wf,
     int64_t ws,
@@ -16,7 +16,7 @@ SoundEventBase::SoundEventBase(
     waveLengthInSeconds(wlis)
 {}
 
-float SoundEventBase::waveEndInSeconds() const
+float WaveChannelStateBase::waveEndInSeconds() const
 {
     return waveStartInSeconds + waveLengthInSeconds;
 }
