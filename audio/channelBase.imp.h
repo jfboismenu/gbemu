@@ -24,6 +24,7 @@ void ChannelBase<Derived, SoundEventType>::insertEvent(const SoundEventType& eve
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _soundEvents[_lastEvent] = event;
+    _soundEvents[_lastEvent].timeStamp = _clock.getTimeInSeconds();
     ++_lastEvent;
     JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
 }

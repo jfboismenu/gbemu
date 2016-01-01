@@ -79,10 +79,7 @@ void WaveChannel::writeByte(
             waveStartInSeconds = _soundEvents[_lastEvent - 1].waveStartInSeconds;
         }
 
-        // Push a new sound event in a thread-safe manner.
-        std::lock_guard<std::mutex> lock(_mutex);
-
-        _soundEvents[_lastEvent] = WaveChannelState(
+        const WaveChannelState event = WaveChannelState(
             _rFrequencyHiPlayback.bits.isLooping(),
             waveStart,
             waveStartInSeconds,
@@ -91,9 +88,7 @@ void WaveChannel::writeByte(
             _rVolume.bits.getVolumeShift(),
             _wavePattern
         );
-        _soundEvents[_lastEvent].timeStamp = _clock.getTimeInSeconds();
-        ++_lastEvent;
-        JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
+        insertEvent(event);
     }
 }
 
