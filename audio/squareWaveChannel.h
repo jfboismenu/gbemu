@@ -83,7 +83,7 @@ namespace gbemu {
     public:
         SquareWaveSoundEvent(
             bool il,
-            int wf,
+            float wf,
             int64_t ws,
             float wsis,
             float wlis,
@@ -92,17 +92,19 @@ namespace gbemu {
             bool va,
             float sl
         );
+        char computeSample(float frameTime) const;
         SquareWaveSoundEvent() = default;
         float waveDuty;
 
         unsigned char getVolumeAt(float currentTime) const;
 
+    private:
         char waveVolume;
         bool isVolumeAmplifying;
         float sweepLength;
     };
 
-    class SquareWaveChannel : public ChannelBase<SquareWaveSoundEvent>
+    class SquareWaveChannel : public ChannelBase<SquareWaveChannel, SquareWaveSoundEvent>
     {
     public:
         SquareWaveChannel(
@@ -114,11 +116,9 @@ namespace gbemu {
             unsigned short frequencyHiRegisterAddr
         );
         bool contains(unsigned short addr) const;
-        void renderAudio(void* output, const unsigned long frameCount, const int rate, const float realTime);
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
     private:
-        char computeSample(float frequency, float timeSinceNoteStart, float duty) const;
         short getGbNote() const;
 
         Register< FrequencySweepBits, 0xFF, 0xFF >             _rFrequencySweep;

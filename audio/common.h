@@ -28,7 +28,7 @@ namespace gbemu {
     {
         SoundEventBase(
             bool il,
-            int wf,
+            float wf,
             int64_t ws,
             float wsis,
             float wlis
@@ -37,7 +37,7 @@ namespace gbemu {
         float waveEndInSeconds() const;
 
         bool isLooping;
-        int waveFrequency;
+        float waveFrequency;
         int waveStart;
         float waveStartInSeconds;
         float waveLengthInSeconds;

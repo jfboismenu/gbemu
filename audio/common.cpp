@@ -5,7 +5,7 @@ namespace gbemu {
 
 SoundEventBase::SoundEventBase(
     bool il,
-    int wf,
+    float wf,
     int64_t ws,
     float wsis,
     float wlis

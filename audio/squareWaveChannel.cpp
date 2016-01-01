@@ -38,73 +38,6 @@ bool SquareWaveChannel::contains(unsigned short addr) const
         addr == _frequencyHiRegisterAddr;
 }
 
-char SquareWaveChannel::computeSample(
-    float frequency,
-    float timeSinceNoteStart,
-    float duty
-) const
-{
-    const float cycleLength = 1 / frequency;
-    // Compute how many times the sound has played, including fractions.
-    const float howManyTimes = timeSinceNoteStart / cycleLength;
-    // Compute how many times the sound has completely played.
-    const float howManyTimesCompleted = int(howManyTimes);
-    // Compute how far we are in the current cycle.
-    const float howManyInCurrent = howManyTimes - howManyTimesCompleted;
-    // SINE
-    // return sin(pos_in_cycle * 2 * M_PI) * 2;
-    // SQUARE
-    return howManyInCurrent < duty ? 1 : -1;
-}
-
-void SquareWaveChannel::renderAudio(
-    void* raw_output,
-    const unsigned long frameCount,
-    const int rate,
-    const float realTime
-)
-{
-    char* output = reinterpret_cast<char*>(raw_output);
-    // Update the interval of sound we're about to produce
-    // Convert the start and end to seconds.
-    const float startInSeconds = realTime;
-    const float endInSeconds = realTime + (float(frameCount) / rate);
-
-    const int cycleStart = startInSeconds * _clock.getRate();
-    const int cycleEnd = endInSeconds * _clock.getRate();
-
-    // Queue is empty, do not play anything.
-    if (_firstEvent == _playbackLastEvent) {
-        return;
-    }
-
-    BufferIndex currentEvent = _firstEvent;
-
-    for (unsigned long i = 0 ; i < frameCount; ++i) {
-        // Peneration of the loop.
-        const float depth = float(i) / frameCount;
-        // Compute the current cpu cycle.
-        const int currentCpuCycle = depth * (cycleEnd - cycleStart) + cycleStart;
-        // Compute the real time in seconds this sample will represent.
-        const float frameTimeInSeconds = realTime + (float(i) / rate);
-
-        // If there are no more events to process, play nothing.
-        if (currentEvent == _playbackLastEvent) {
-            break;
-        } else if (currentCpuCycle < _soundEvents[currentEvent].timeStamp) {
-            // If we still haven't reached the first note, play nothing.
-            continue;
-        }
-        const float timeSinceEventStart = (frameTimeInSeconds - _soundEvents[currentEvent].waveStartInSeconds);
-
-        output[i] += computeSample(
-            _soundEvents[currentEvent].waveFrequency, 
-            timeSinceEventStart,
-            _soundEvents[currentEvent].waveDuty
-        ) * _soundEvents[currentEvent].getVolumeAt(frameTimeInSeconds);
-    }
-}
-
 void SquareWaveChannel::writeByte(
     const unsigned short addr,
     const unsigned char value
@@ -176,7 +109,7 @@ short SquareWaveChannel::getGbNote() const
 
 SquareWaveSoundEvent::SquareWaveSoundEvent(
     bool il,
-    int wf,
+    float wf,
     int64_t ws,
     float wsis,
     float wlis,
@@ -210,8 +143,28 @@ unsigned char SquareWaveSoundEvent::getVolumeAt(float currentTime) const
     );
 }
 
-template void ChannelBase<SquareWaveSoundEvent>::updateEventsQueue(
-    const float audioFrameStartInSeconds
-);
+char SquareWaveSoundEvent::computeSample(
+    float frameTimeInSeconds
+) const
+{
+
+    const float timeSinceEventStart = (frameTimeInSeconds - waveStartInSeconds);
+
+    const float cycleLength = 1 / waveFrequency;
+    // Compute how many times the sound has played, including fractions.
+    const float howManyTimes = timeSinceEventStart / cycleLength;
+    // Compute how many times the sound has completely played.
+    const float howManyTimesCompleted = int(howManyTimes);
+    // Compute how far we are in the current cycle.
+    const float howManyInCurrent = howManyTimes - howManyTimesCompleted;
+    // SINE
+    // return sin(pos_in_cycle * 2 * M_PI) * 2;
+    // SQUARE
+    const char sample = (howManyInCurrent < waveDuty) ? 1 : -1;
+    return sample * getVolumeAt(frameTimeInSeconds);
+}
+
+
+template class ChannelBase<SquareWaveChannel, SquareWaveSoundEvent>;
 
 }

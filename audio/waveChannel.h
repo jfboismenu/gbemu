@@ -56,27 +56,26 @@ namespace gbemu {
         WaveSoundEvent() = default;
         WaveSoundEvent(
             bool il,
-            int wf,
+            float wf,
             int64_t ws,
             float wsis,
             float wlis,
             char vs,
             const WavePatternSamples& samples
         );
-        char getVolumeShift() const;
+        char computeSample(float frameTime) const;
     public:
         WavePatternSamples samples;
     private:
         char               _volumeShift;
     };
 
-    class WaveChannel : public ChannelBase<WaveSoundEvent>
+    class WaveChannel : public ChannelBase<WaveChannel, WaveSoundEvent>
     {
     public:
         WaveChannel(
             const Clock& clock
         );
-        void renderAudio(void* output, const unsigned long frameCount, const int rate, const float realTime);
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
         bool contains(unsigned short addr) const;

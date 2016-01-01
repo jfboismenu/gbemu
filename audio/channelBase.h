@@ -8,18 +8,24 @@ namespace gbemu {
 
     class Clock;
 
-    template< typename SoundEventType >
+    template< typename Derived, typename SoundEventType >
     class ChannelBase
     {
     public:
         void updateEventsQueue(const float audioFrameStartInSeconds);
+        void renderAudio(
+            void* raw_output,
+            const unsigned long frameCount,
+            const int rate,
+            const float realTime
+        );
     protected:
         void insertEvent(const SoundEventType& event);
         ChannelBase(const Clock& clock);
 
         const Clock&                                           _clock;
 
-        enum {BUFFER_SIZE = 32};
+        enum {BUFFER_SIZE = 512};
 
         std::array<SoundEventType, BUFFER_SIZE> _soundEvents;
 

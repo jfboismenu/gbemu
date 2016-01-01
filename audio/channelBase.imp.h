@@ -7,8 +7,8 @@
 
 namespace gbemu {
 
-template< typename SoundEventType >
-ChannelBase<SoundEventType>::ChannelBase(
+template< typename Derived, typename SoundEventType >
+ChannelBase<Derived, SoundEventType>::ChannelBase(
     const Clock& clock
 ) :
     _clock( clock ),
@@ -17,8 +17,8 @@ ChannelBase<SoundEventType>::ChannelBase(
     _playbackLastEvent(0)
 {}
 
-template< typename SoundEventType >
-void ChannelBase<SoundEventType>::insertEvent(const SoundEventType& event)
+template< typename Derived, typename SoundEventType >
+void ChannelBase<Derived, SoundEventType>::insertEvent(const SoundEventType& event)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _soundEvents[_lastEvent] = event;
@@ -27,8 +27,8 @@ void ChannelBase<SoundEventType>::insertEvent(const SoundEventType& event)
 }
 
 
-template< typename SoundEventType >
-void ChannelBase<SoundEventType>::updateEventsQueue(
+template< typename Derived, typename SoundEventType >
+void ChannelBase<Derived, SoundEventType>::updateEventsQueue(
     const float audioFrameStartInSeconds
 )
 {
@@ -68,6 +68,50 @@ void ChannelBase<SoundEventType>::updateEventsQueue(
     // We need to capture the state of the lastEvent member because the main thread may try
     // to udpate that index while we are rendering audio.
     _playbackLastEvent = _lastEvent;
+}
+
+template< typename Derived, typename SoundEventType >
+void ChannelBase<Derived, SoundEventType>::renderAudio(
+    void* raw_output,
+    const unsigned long frameCount,
+    const int rate,
+    const float realTime
+)
+{
+    char* output = reinterpret_cast<char*>(raw_output);
+    // Update the interval of sound we're about to produce
+    // Convert the start and end to seconds.
+    const float startInSeconds = realTime;
+    const float endInSeconds = realTime + (float(frameCount) / rate);
+
+    const int cycleStart = startInSeconds * _clock.getRate();
+    const int cycleEnd = endInSeconds * _clock.getRate();
+
+    // Queue is empty, do not play anything.
+    if (_firstEvent == _playbackLastEvent) {
+        return;
+    }
+
+    BufferIndex currentEvent = _firstEvent;
+
+    for (unsigned long i = 0 ; i < frameCount; ++i) {
+        // Peneration of the loop.
+        const float depth = float(i) / frameCount;
+        // Compute the current cpu cycle.
+        const int currentCpuCycle = depth * (cycleEnd - cycleStart) + cycleStart;
+        // Compute the real time in seconds this sample will represent.
+        const float frameTimeInSeconds = realTime + (float(i) / rate);
+
+        // If there are no more events to process, play nothing.
+        if (currentEvent == _playbackLastEvent) {
+            break;
+        } else if (currentCpuCycle < _soundEvents[currentEvent].timeStamp) {
+            // If we still haven't reached the first note, play nothing.
+            continue;
+        }
+
+        output[i] += _soundEvents[currentEvent].computeSample(frameTimeInSeconds);
+    }
 }
 
 }
