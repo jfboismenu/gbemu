@@ -74,7 +74,8 @@ namespace gbemu {
     {
     public:
         WaveChannel(
-            const Clock& clock
+            const Clock& clock,
+            std::mutex& mutex
         );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;

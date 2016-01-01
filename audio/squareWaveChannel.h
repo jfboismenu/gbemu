@@ -109,6 +109,7 @@ namespace gbemu {
     public:
         SquareWaveChannel(
             const Clock& clock,
+            std::mutex& mutex,
             unsigned short frequencyShiftRegisterAddr,
             unsigned short soundLengthRegisterAddr,
             unsigned short evenloppeRegisterAddr,

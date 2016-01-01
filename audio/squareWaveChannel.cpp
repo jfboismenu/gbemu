@@ -15,13 +15,14 @@ namespace gbemu {
 
 SquareWaveChannel::SquareWaveChannel(
     const Clock& clock,
+    std::mutex& mutex,
     unsigned short frequencyShiftRegisterAddr,
     unsigned short soundLengthRegisterAddr,
     unsigned short evenloppeRegisterAddr,
     unsigned short frequencyLowRegisterAddr,
     unsigned short frequencyHiRegisterAddr
 ) :
-    ChannelBase(clock),
+    ChannelBase(clock, mutex),
     _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
     _soundLengthRegisterAddr(soundLengthRegisterAddr),
     _evenloppeRegisterAddr(evenloppeRegisterAddr),

@@ -9,9 +9,11 @@ namespace gbemu {
 
 template< typename Derived, typename SoundEventType >
 ChannelBase<Derived, SoundEventType>::ChannelBase(
-    const Clock& clock
+    const Clock& clock,
+    std::mutex& mutex
 ) :
     _clock( clock ),
+    _mutex( mutex ),
     _firstEvent(0),
     _lastEvent(0),
     _playbackLastEvent(0)
@@ -32,7 +34,6 @@ void ChannelBase<Derived, SoundEventType>::updateEventsQueue(
     const float audioFrameStartInSeconds
 )
 {
-    std::lock_guard<std::mutex> lock(_mutex);
     for (BufferIndex i = _firstEvent; i != _playbackLastEvent ; ++i) {
 
         // If sound is looping and the end of that audio event is before this audio frame.

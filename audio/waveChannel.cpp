@@ -16,9 +16,10 @@ namespace {
 namespace gbemu {
 
 WaveChannel::WaveChannel(
-    const Clock& clock
+    const Clock& clock,
+    std::mutex& mutex
 ) :
-    ChannelBase(clock),
+    ChannelBase(clock, mutex),
     _wavePatternPtr(&_wavePattern[ 0 ] - kWavePatternRAMStart)
 {}
 

@@ -61,6 +61,9 @@ namespace gbemu {
 
         bool isRegisterAvailable( const unsigned short addr ) const;
 
+        // This mutex needs to be declared before channels since it is passed
+        // down to channels.
+        std::mutex                _mutex;
         SquareWaveChannel  _squareWaveChannel1;
         SquareWaveChannel  _squareWaveChannel2;
         WaveChannel        _waveChannel;

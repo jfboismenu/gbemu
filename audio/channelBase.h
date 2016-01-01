@@ -21,7 +21,10 @@ namespace gbemu {
         );
     protected:
         void insertEvent(const SoundEventType& event);
-        ChannelBase(const Clock& clock);
+        ChannelBase(
+            const Clock& clock,
+            std::mutex& mutex
+        );
 
         const Clock&                                           _clock;
 
@@ -34,6 +37,6 @@ namespace gbemu {
         BufferIndex               _firstEvent;
         BufferIndex               _lastEvent;
         BufferIndex               _playbackLastEvent;
-        std::mutex                _mutex;
+        std::mutex&               _mutex;
     };
 }

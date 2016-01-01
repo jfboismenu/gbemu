@@ -20,9 +20,9 @@ bool PAPU::contains( unsigned short addr ) const
 
 PAPU::PAPU( const Clock& clock ) : 
     _clock( clock ),
-    _squareWaveChannel1( clock, kNR10, kNR11, kNR12, kNR13, kNR14 ),
-    _squareWaveChannel2( clock, 0, kNR21, kNR22, kNR23, kNR24 ),
-    _waveChannel( clock ),
+    _squareWaveChannel1( clock, _mutex, kNR10, kNR11, kNR12, kNR13, kNR14 ),
+    _squareWaveChannel2( clock, _mutex, 0, kNR21, kNR22, kNR23, kNR24 ),
+    _waveChannel( clock, _mutex ),
     _initializing( true )
 {
 
@@ -137,9 +137,12 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
     float realTime(float(_currentPlaybackTime)/_rate);
 
     // Update sound event queue.
-    _squareWaveChannel1.updateEventsQueue(realTime);
-    _squareWaveChannel2.updateEventsQueue(realTime);
-    _waveChannel.updateEventsQueue(realTime);
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _squareWaveChannel1.updateEventsQueue(realTime);
+        _squareWaveChannel2.updateEventsQueue(realTime);
+        _waveChannel.updateEventsQueue(realTime);
+    }
 
     // Render audio to the output buffer.
     _squareWaveChannel1.renderAudio(output, frameCount, rate, realTime);
