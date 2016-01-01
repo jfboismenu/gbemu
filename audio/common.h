@@ -28,10 +28,10 @@ namespace gbemu {
     {
         WaveChannelStateBase(
             bool il,
-            float wf,
             int64_t ws,
             float wsis,
-            float wlis
+            float wlis,
+            float wf
         );
         WaveChannelStateBase() = default;
         float waveEndInSeconds() const;

@@ -83,10 +83,10 @@ namespace gbemu {
     public:
         SquareWaveChannelState(
             bool il,
-            float wf,
             int64_t ws,
             float wsis,
             float wlis,
+            float wf,
             float d,
             char v,
             bool va,

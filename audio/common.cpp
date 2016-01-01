@@ -5,10 +5,10 @@ namespace gbemu {
 
 WaveChannelStateBase::WaveChannelStateBase(
     bool il,
-    float wf,
     int64_t ws,
     float wsis,
-    float wlis
+    float wlis,
+    float wf
 ) : isLooping(il),
     waveFrequency(wf),
     waveStart(ws),

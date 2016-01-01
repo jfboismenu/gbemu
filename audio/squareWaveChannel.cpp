@@ -90,10 +90,10 @@ void SquareWaveChannel::writeByte(
         // Clone the last event.
         const SquareWaveChannelState event(
             _rFrequencyHiPlayback.bits.isLooping(),
-            gbNoteToFrequency(getGbNote()),
             waveStart,
             waveStartInSeconds,
             _rLengthDuty.bits.getSoundLength(),
+            gbNoteToFrequency(getGbNote()),
             _rLengthDuty.bits.getWaveDutyPercentage(),
             _rEnveloppe.bits.initialVolume,
             _rEnveloppe.bits.isAmplifying(),
@@ -110,15 +110,15 @@ short SquareWaveChannel::getGbNote() const
 
 SquareWaveChannelState::SquareWaveChannelState(
     bool il,
-    float wf,
     int64_t ws,
     float wsis,
     float wlis,
+    float wf,
     float d,
     char v,
     bool va,
     float sl
-) : WaveChannelStateBase(il, wf, ws, wsis, wlis),
+) : WaveChannelStateBase(il, ws, wsis, wlis, wf),
     waveDuty(d),
     waveVolume(v),
     isVolumeAmplifying(va),

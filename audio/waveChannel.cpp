@@ -84,10 +84,10 @@ void WaveChannel::writeByte(
 
         _soundEvents[_lastEvent] = WaveChannelState(
             _rFrequencyHiPlayback.bits.isLooping(),
-            gbNoteToFrequency(getGbNote()),
             waveStart,
             waveStartInSeconds,
             _rSoundLength.bits.getSoundLength(),
+            gbNoteToFrequency(getGbNote()),
             _rVolume.bits.getVolumeShift(),
             _wavePattern
         );
@@ -99,13 +99,13 @@ void WaveChannel::writeByte(
 
 WaveChannelState::WaveChannelState(
     bool il,
-    float wf,
     int64_t ws,
     float wsis,
     float wlis,
+    float wf,
     char vs,
     const WavePatternSamples& s
-) : WaveChannelStateBase(il, wf, ws, wsis, wlis),
+) : WaveChannelStateBase(il, ws, wsis, wlis, wf),
     _volumeShift(vs),
     samples(s)
 {}

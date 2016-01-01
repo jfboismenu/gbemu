@@ -56,10 +56,10 @@ namespace gbemu {
         WaveChannelState() = default;
         WaveChannelState(
             bool il,
-            float wf,
             int64_t ws,
             float wsis,
             float wlis,
+            float wf,
             char vs,
             const WavePatternSamples& samples
         );
