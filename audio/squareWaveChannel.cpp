@@ -148,20 +148,7 @@ char SquareWaveChannelState::computeSample(
     float frameTimeInSeconds
 ) const
 {
-
-    const float timeSinceEventStart = (frameTimeInSeconds - waveStartInSeconds);
-
-    const float cycleLength = 1 / waveFrequency;
-    // Compute how many times the sound has played, including fractions.
-    const float howManyTimes = timeSinceEventStart / cycleLength;
-    // Compute how many times the sound has completely played.
-    const float howManyTimesCompleted = int(howManyTimes);
-    // Compute how far we are in the current cycle.
-    const float howManyInCurrent = howManyTimes - howManyTimesCompleted;
-    // SINE
-    // return sin(pos_in_cycle * 2 * M_PI) * 2;
-    // SQUARE
-    const char sample = (howManyInCurrent < waveDuty) ? 1 : -1;
+    const char sample = (getPositionInsideWaveform(frameTimeInSeconds) < waveDuty) ? 1 : -1;
     return sample * getVolumeAt(frameTimeInSeconds);
 }
 

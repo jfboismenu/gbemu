@@ -43,5 +43,9 @@ namespace gbemu {
         float waveLengthInSeconds;
 
         float timeStamp;
+    protected:
+        // Computes where inside the current waveform the time is located.
+        // Returns a value between 0 and 1.
+        float getPositionInsideWaveform(const float frameTimeInSeconds) const;
     };
 }

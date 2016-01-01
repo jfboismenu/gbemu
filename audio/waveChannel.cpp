@@ -114,17 +114,7 @@ char WaveChannelState::computeSample(
     float frameTimeInSeconds
 ) const
 {
-    const float timeSinceEventStart = (frameTimeInSeconds - waveStartInSeconds);
-
-    const float cycleLength = 1 / waveFrequency;
-    // Compute how many times the sound has played, including fractions.
-    const float howManyTimes = timeSinceEventStart / cycleLength;
-    // Compute how many times the sound has completely played.
-    const float howManyTimesCompleted = int(howManyTimes);
-    // Compute how far we are in the current cycle.
-    const float howManyInCurrent = (howManyTimes - howManyTimesCompleted);
-
-    const int sampleIdx = howManyInCurrent * 32;
+    const int sampleIdx = getPositionInsideWaveform(frameTimeInSeconds) * 32;
     const int samplePos = sampleIdx / 2;
     const int sampleNibble = sampleIdx % 2;
 
