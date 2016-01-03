@@ -1,5 +1,4 @@
 #include <audio/squareWaveChannel.h>
-#include <audio/channelBase.imp.h>
 #include <base/cyclicCounter.imp.h>
 #include <base/clock.h>
 #include <base/logger.h>
@@ -75,43 +74,6 @@ void SquareWaveChannel::writeByte(
         JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
         JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
         JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
-
-        const float frequency = gbNoteToFrequency(getGbNote());
-        JFX_LOG("Frequency    : " << frequency);
-
-        // We are reinitializating the counters, so snapshot current
-        // time.
-        int64_t waveStart;
-        float waveStartInSeconds;
-        float delta;
-
-        if (_rFrequencyHiPlayback.bits.initialize) {
-            waveStart = _clock.getTimeInCycles();
-            waveStartInSeconds = _clock.getTimeInSeconds();
-            delta = 0;
-        } else {
-            const SquareWaveChannelState& lastEvent(_soundEvents[_lastEvent - 1]);
-            waveStart = lastEvent.waveStart;
-            waveStartInSeconds = lastEvent.waveStartInSeconds;
-
-            const float frameTimeInSeconds = _clock.getTimeInSeconds();
-            const float timeSinceEventStart = (frameTimeInSeconds - waveStartInSeconds) + lastEvent.delta;
-            delta = timeSinceEventStart * (lastEvent.waveFrequency / frequency) - (frameTimeInSeconds - waveStartInSeconds);
-        }
-
-        const SquareWaveChannelState event(
-            _rFrequencyHiPlayback.bits.isLooping(),
-            waveStart,
-            waveStartInSeconds,
-            _rLengthDuty.bits.getSoundLength(),
-            frequency,
-            delta,
-            _rLengthDuty.bits.getWaveDutyPercentage(),
-            _rEnveloppe.bits.initialVolume,
-            _rEnveloppe.bits.isAmplifying(),
-            _rEnveloppe.bits.getSweepLength()
-        );
-        insertEvent(event);
     }
 }
 
@@ -120,24 +82,7 @@ short SquareWaveChannel::getGbNote() const
     return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
 }
 
-SquareWaveChannelState::SquareWaveChannelState(
-    bool il,
-    int64_t ws,
-    float wsis,
-    float wlis,
-    float wf,
-    float dx,
-    float d,
-    char v,
-    bool va,
-    float sl
-) : WaveChannelStateBase(il, ws, wsis, wlis, wf, dx),
-    waveDuty(d),
-    waveVolume(v),
-    isVolumeAmplifying(va),
-    sweepLength(sl)
-{}
-
+/*
 unsigned char SquareWaveChannelState::getVolumeAt(float currentTime) const
 {
     // Sweep length is zero, so don't amplify or reduce volume.
@@ -164,8 +109,6 @@ char SquareWaveChannelState::computeSample(
     const char sample = (getPositionInsideWaveform(frameTimeInSeconds) < waveDuty) ? 1 : -1;
     return sample * getVolumeAt(frameTimeInSeconds);
 }
-
-
-template class ChannelBase<SquareWaveChannel, SquareWaveChannelState>;
+*/
 
 }

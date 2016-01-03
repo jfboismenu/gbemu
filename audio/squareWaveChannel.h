@@ -78,34 +78,7 @@ namespace gbemu {
         unsigned char _sweepLength: 4;
     };
 
-    class SquareWaveChannelState : public WaveChannelStateBase
-    {
-    public:
-        SquareWaveChannelState(
-            bool il,
-            int64_t ws,
-            float wsis,
-            float wlis,
-            float wf,
-            float delta,
-            float d,
-            char v,
-            bool va,
-            float sl
-        );
-        char computeSample(float frameTime) const;
-        SquareWaveChannelState() = default;
-        float waveDuty;
-
-        unsigned char getVolumeAt(float currentTime) const;
-
-    private:
-        char waveVolume;
-        bool isVolumeAmplifying;
-        float sweepLength;
-    };
-
-    class SquareWaveChannel : public ChannelBase<SquareWaveChannel, SquareWaveChannelState>
+    class SquareWaveChannel : public ChannelBase
     {
     public:
         SquareWaveChannel(

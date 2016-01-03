@@ -139,9 +139,9 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
     // Update sound event queue.
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        _squareWaveChannel1.updateEventsQueue(realTime);
-        _squareWaveChannel2.updateEventsQueue(realTime);
-        _waveChannel.updateEventsQueue(realTime);
+        // _squareWaveChannel1.updateEventsQueue(realTime);
+        // _squareWaveChannel2.updateEventsQueue(realTime);
+        // _waveChannel.updateEventsQueue(realTime);
     }
 
     // Render audio to the output buffer.
