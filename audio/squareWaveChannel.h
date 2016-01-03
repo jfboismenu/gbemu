@@ -87,6 +87,7 @@ namespace gbemu {
             float wsis,
             float wlis,
             float wf,
+            float delta,
             float d,
             char v,
             bool va,

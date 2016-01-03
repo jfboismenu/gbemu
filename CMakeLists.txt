@@ -29,15 +29,20 @@ set_source_files_properties(../audio.cpp PROPERTIES COMPILE_FLAGS
     "-Wno-deprecated-declarations")
 link_directories(/usr/local/lib)
 
-add_executable(
-    gbemu
-    base/audio.cpp base/logger.cpp base/clock.cpp base/cyclicCounter.cpp
+add_library(
+    gbemulib
+    base/logger.cpp base/clock.cpp base/cyclicCounter.cpp
     common/register.cpp common/common.cpp
     cpu/cpu.cpp cpu/opcode.cpp cpu/timers.cpp cpu/registers.cpp
     video/videoDisplay.cpp
     memory/bootRom.cpp memory/mbc.cpp memory/memory.cpp memory/cartridgeInfo.cpp memory/memoryRegion.cpp
     audio/common.cpp audio/channelBase.cpp audio/papu.cpp audio/squareWaveChannel.cpp audio/waveChannel.cpp
-    gameboy.cpp gbemu.cpp glutapp.cpp
+    gameboy.cpp gbemu.cpp
 )
 
-target_link_libraries(gbemu ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} portaudio)
+add_executable(
+    gbemu
+    base/audio.cpp glutapp.cpp
+)
+
+target_link_libraries(gbemu gbemulib ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} portaudio)

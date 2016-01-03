@@ -26,15 +26,25 @@ namespace gbemu {
 
     struct WaveChannelStateBase
     {
+        static float computePositionInsideWaveform(
+            const float frameTimeInSeconds,
+            const float waveStartInSeconds,
+            const float frequency,
+            const float delta
+        );
         WaveChannelStateBase(
             bool il,
             int64_t ws,
             float wsis,
             float wlis,
-            float wf
+            float wf,
+            float delta
         );
         WaveChannelStateBase() = default;
         float waveEndInSeconds() const;
+        // Computes where inside the current waveform the time is located.
+        // Returns a value between 0 and 1.
+        float getPositionInsideWaveform(const float frameTimeInSeconds) const;
 
         bool isLooping;
         float waveFrequency;
@@ -43,9 +53,6 @@ namespace gbemu {
         float waveLengthInSeconds;
 
         float timeStamp;
-    protected:
-        // Computes where inside the current waveform the time is located.
-        // Returns a value between 0 and 1.
-        float getPositionInsideWaveform(const float frameTimeInSeconds) const;
+        float delta;
     };
 }

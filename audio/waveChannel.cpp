@@ -100,7 +100,7 @@ WaveChannelState::WaveChannelState(
     float wf,
     char vs,
     const WavePatternSamples& s
-) : WaveChannelStateBase(il, ws, wsis, wlis, wf),
+) : WaveChannelStateBase(il, ws, wsis, wlis, wf, 0),
     _volumeShift(vs),
     samples(s)
 {}

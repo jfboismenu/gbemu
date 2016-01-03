@@ -53,47 +53,59 @@ void SquareWaveChannel::writeByte(
     }
     else if ( addr == _soundLengthRegisterAddr ) {
         _rLengthDuty.write( value );
-        JFX_LOG("-----NR11-ff11-----");
-        JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
-        JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
+        // JFX_LOG("-----NR11-ff11-----");
+        // JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
+        // JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
     }
     else if ( addr == _evenloppeRegisterAddr ) {
         _rEnveloppe.write( value );
-        JFX_LOG("-----NR12-ff12-----");
-        JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
-        JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
-        JFX_LOG("Length of each step          : " << _rEnveloppe.bits.getSweepLength() << " seconds");
+        // JFX_LOG("-----NR12-ff12-----");
+        // JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
+        // JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
+        // JFX_LOG("Length of each step          : " << _rEnveloppe.bits.getSweepLength() << " seconds");
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
-        JFX_LOG("-----NR13-ff13-----");
-        JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
+        // JFX_LOG("-----NR13-ff13-----");
+        // JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
     }
     else if ( addr == _frequencyHiRegisterAddr ) {
         _rFrequencyHiPlayback.write(value);
-        JFX_LOG("-----NR14-ff14-----");
+        JFX_LOG("-----NR14-" << std::hex << _frequencyHiRegisterAddr << std::dec << "-----");
         JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
         JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
         JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
+
+        const float frequency = gbNoteToFrequency(getGbNote());
+        JFX_LOG("Frequency    : " << frequency);
 
         // We are reinitializating the counters, so snapshot current
         // time.
         int64_t waveStart;
         float waveStartInSeconds;
+        float delta;
+
         if (_rFrequencyHiPlayback.bits.initialize) {
             waveStart = _clock.getTimeInCycles();
             waveStartInSeconds = _clock.getTimeInSeconds();
+            delta = 0;
         } else {
-            waveStart = _soundEvents[_lastEvent - 1].waveStart;
-            waveStartInSeconds = _soundEvents[_lastEvent - 1].waveStartInSeconds;
+            const SquareWaveChannelState& lastEvent(_soundEvents[_lastEvent - 1]);
+            waveStart = lastEvent.waveStart;
+            waveStartInSeconds = lastEvent.waveStartInSeconds;
+
+            const float frameTimeInSeconds = _clock.getTimeInSeconds();
+            const float timeSinceEventStart = (frameTimeInSeconds - waveStartInSeconds) + lastEvent.delta;
+            delta = timeSinceEventStart * (lastEvent.waveFrequency / frequency) - (frameTimeInSeconds - waveStartInSeconds);
         }
-        // Clone the last event.
+
         const SquareWaveChannelState event(
             _rFrequencyHiPlayback.bits.isLooping(),
             waveStart,
             waveStartInSeconds,
             _rLengthDuty.bits.getSoundLength(),
-            gbNoteToFrequency(getGbNote()),
+            frequency,
+            delta,
             _rLengthDuty.bits.getWaveDutyPercentage(),
             _rEnveloppe.bits.initialVolume,
             _rEnveloppe.bits.isAmplifying(),
@@ -114,11 +126,12 @@ SquareWaveChannelState::SquareWaveChannelState(
     float wsis,
     float wlis,
     float wf,
+    float dx,
     float d,
     char v,
     bool va,
     float sl
-) : WaveChannelStateBase(il, ws, wsis, wlis, wf),
+) : WaveChannelStateBase(il, ws, wsis, wlis, wf, dx),
     waveDuty(d),
     waveVolume(v),
     isVolumeAmplifying(va),

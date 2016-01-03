@@ -8,12 +8,14 @@ WaveChannelStateBase::WaveChannelStateBase(
     int64_t ws,
     float wsis,
     float wlis,
-    float wf
+    float wf,
+    float d
 ) : isLooping(il),
     waveFrequency(wf),
     waveStart(ws),
     waveStartInSeconds(wsis),
-    waveLengthInSeconds(wlis)
+    waveLengthInSeconds(wlis),
+    delta(d)
 {}
 
 float WaveChannelStateBase::waveEndInSeconds() const
@@ -23,11 +25,10 @@ float WaveChannelStateBase::waveEndInSeconds() const
 
 float WaveChannelStateBase::getPositionInsideWaveform(const float frameTimeInSeconds) const
 {
-    const float timeSinceEventStart = (frameTimeInSeconds - waveStartInSeconds);
+    const float timeSinceEventStart = (frameTimeInSeconds - (waveStartInSeconds + delta));
 
-    const float cycleLength = 1 / waveFrequency;
     // Compute how many times the sound has played, including fractions.
-    const float howManyTimes = timeSinceEventStart / cycleLength;
+    const float howManyTimes = (timeSinceEventStart - int(timeSinceEventStart)) * waveFrequency;
     // Compute how many times the sound has completely played.
     const float howManyTimesCompleted = int(howManyTimes);
     // Compute how far we are in the current cycle.
