@@ -49,9 +49,9 @@ void SquareWaveChannel::writeByte(
         _rLengthDuty.write( value );
 
         _duty = _rLengthDuty.bits.wavePatternDuty();
-        // JFX_LOG("-----NR11-ff11-----");
-        // JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
-        // JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
+        JFX_LOG("-----NR11-ff11-----");
+        JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.wavePatternDuty());
+        JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.soundLength);
     }
     else if ( addr == _evenloppeRegisterAddr ) {
         _rEnveloppe.write( value );
@@ -64,8 +64,8 @@ void SquareWaveChannel::writeByte(
         _rFrequencyLo.write( value );
 
         _frequency_period = (2048 - getGbNote()) * 4;
-        // JFX_LOG("-----NR13-ff13-----");
-        // JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
+        JFX_LOG("-----NR13-ff13-----");
+        JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
     }
     else if ( addr == _frequencyHiRegisterAddr ) {
         _rFrequencyHiPlayback.write(value);
@@ -97,6 +97,7 @@ void SquareWaveChannel::emulate(int nbCycles)
     // Decrement the period counter by the number of cycles that need to be emulated.
     // For each underflow, increment by one the step counter.
     for (int i = 0; i < nbCycles; ++i) {
+        const int64_t currentCycle = _clock.getTimeInCycles() - (nbCycles - i + 1);
         if (_frequency_timer.getCycleLength() == 0) {
             break;
         }
@@ -108,7 +109,7 @@ void SquareWaveChannel::emulate(int nbCycles)
         _current_duty_step.increment();
         //std::cout << _current_duty_step.count() << " " << _duty << std::endl;
         insertEvent(
-            _clock.getTimeInCycles() - (nbCycles - i + 1),
+            currentCycle,
             _current_duty_step < _duty ? -_volume : _volume
         );
     }

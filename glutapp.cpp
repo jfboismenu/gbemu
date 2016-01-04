@@ -205,19 +205,18 @@ namespace {
     {
         // If we are perforrming slower than audio at the moment, do not sleep!
         if (gbInstance->getClock().getTimeInSeconds() < gbInstance->getPAPU().getCurrentPlaybackTime()) {
+            //std::cout << "Audio drop!" << std::endl;
             return;
         }
         typedef std::chrono::high_resolution_clock Clock;
         typedef std::chrono::milliseconds milliseconds;
-        
+
         const float audioLag = gbInstance->getClock().getTimeInSeconds() - gbInstance->getPAPU().getCurrentPlaybackTime();
-        if (audioLag < 0) {
-            return;
-        }
+
         if (audioLag > 0.100) {
-            std::this_thread::sleep_for(milliseconds(1));
+            //std::cout << "Audio lag: " << audioLag << std::endl;
+            //std::this_thread::sleep_for(milliseconds(int(audioLag * 1000 / 4)));
         }
-        
     }
 
     void render(void)

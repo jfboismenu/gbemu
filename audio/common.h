@@ -33,6 +33,7 @@ namespace gbemu {
         SoundEvent() = default;
 
         int64_t time;
+        int64_t endTime;
         char    sample;
     };
 }

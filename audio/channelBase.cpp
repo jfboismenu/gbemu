@@ -23,13 +23,13 @@ void ChannelBase::renderAudio(
     const int64_t audioStartInFrames
 )
 {
-/*    bool dumped = false;
-    if (!dumped) {
-        std::cout << "Audio range : [" << audioStartInFrames << ", " << audioStartInFrames + frameCount << "]" << std::endl;
-        std::cout << "Index range : [" << _firstEvent << ", " << _lastEvent << "]" << std::endl;
-        std::cout << "Sample range : [" << _soundEvents[_firstEvent].time << ", " << _soundEvents[_lastEvent - 1].time << "]" << std::endl;
-        dumped = true;
-    }*/
+    // bool dumped = false;
+    // if (!dumped) {
+    //     std::cout << "Audio range : [" << audioStartInFrames << ", " << audioStartInFrames + frameCount << "]" << std::endl;
+    //     std::cout << "Index range : [" << _firstEvent << ", " << _lastEvent << "]" << std::endl;
+    //     std::cout << "Sample range : [" << _soundEvents[_firstEvent].time << ", " << _soundEvents[_lastEvent - 1].time << "]" << std::endl;
+    //     dumped = true;
+    // }
     /*for (BufferIndex i = _firstEvent; i != _lastEvent; ++i) {
         std::cout << _soundEvents[i].time << " " << int(_soundEvents[i].sample) << std::endl;
     }*/
@@ -39,27 +39,33 @@ void ChannelBase::renderAudio(
 
     if (_firstEvent == _lastEvent) {
         //std::cout << "Nothing to play!!!" << std::endl;
+        // if (dumped) {
+        //     std::cout << "----" << std::endl;
+        // }
         return;
     }
     else {
         BufferIndex currentEvent = _firstEvent;
+        int64_t currentFrame = audioStartInFrames;
         //std::cout << (int)_soundEvents[_firstEvent].sample << std::endl;
-        for (int i = 0; i < frameCount; ++i) {
-            const int64_t currentFrame = audioStartInFrames + i;
+        for (int i = 0; i < frameCount; ++i, ++currentFrame) {
             // Sync up to the next valid sample.
-            // While there is another event after this one.
+            // This the end of this sound is before the current frame.
             while (
-                (currentEvent + 1) != _lastEvent &&
-                _soundEvents[currentEvent + 1].time <= currentFrame
+                currentEvent != _lastEvent &&
+                _soundEvents[currentEvent].endTime <= currentFrame
             ) {
                 ++currentEvent;
             }
 
-            if (currentFrame < _soundEvents[currentEvent].time) {
-
-                //std::cout << "Missing@" << currentFrame << std::endl;
-                continue;
+            if (currentEvent == _lastEvent) {
+                break;
             }
+
+            //if (currentFrame < _soundEvents[currentEvent].time) {
+                //std::cout << "Missing@" << currentFrame << std::endl;
+              //  continue;
+            //}
             output[i] += _soundEvents[currentEvent].sample;
             //std::cout << int(output[i]) << std::endl;
         }
@@ -71,49 +77,15 @@ void ChannelBase::renderAudio(
 
 void ChannelBase::updateEventsQueue(int64_t currentTime)
 {
-    // Empty
-    if (_firstEvent == _lastEvent) {
-        return;
-    }
-
-    // std::cout << "first sample time : " << _soundEvents[_firstEvent].time << std::endl;
-    // std::cout << "current : " << currentTime << std::endl;
-    // std::cout << "last sample time : " << _soundEvents[_lastEvent - 1].time << std::endl;
-    // std::cout << "nb samples : " << _lastEvent - _firstEvent << std::endl;
-
-    // If the event list only contains one event, there's nothing to do.
-    // Either it started before this currentTime, and therefore it is still playing.
-    // Either if started afrer this current time, and therefore it might start playing
-    // in this frame.
-    for (BufferIndex i = _firstEvent + 1; i < _lastEvent; ++i, ++_firstEvent) {
-        // As soon as we find an event that starts after the currentTime,
-        // we know that the previous one will have started at or before it.
-
-        // Consider the following:
-        // Current time = 5
-        // Sound events at 1, 3, 5, 7.
-        // Indexes are     0, 1, 2, 3 (lastEvent is 4)
-        // i = 1, firstEvent = 0
-        // 3 not greater than 5, so we can move our first event pointer to it. 
-        // i = 2, firstEvent = 1
-        // 5 is not greater than 5, so we can move out first event point to it.
-        // i = 3, firstEvent = 2
-        // 7 is greater than 5, so we break.
-
-        // Consider a scenario where current is 5
-        // events are  0, 3, 4
-        // Indexes are 0, 1, 2 (lastEvent is 3)
-        // on the last loop,
-        // i = 2, firstEvent = 1
-        // 4 is still not lower than 5.
-        // i now becomes 3, first event is not 2.
-        // loop breaks beause i is not lower than lastEvent
-        if (_soundEvents[i].time > currentTime) {
+    for (BufferIndex i = _firstEvent; i != _lastEvent; ++i) {
+        // If this sound ends after or at the current time.
+        if (_soundEvents[i].endTime >= currentTime) {
             break;
         }
+        JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
+        ++_firstEvent;
     }
-    // std::cout << "new first sample : " << _soundEvents[_firstEvent].time << std::endl;
-    // std::cout << "-----------------------------" << std::endl;
+    
 }
 
 void ChannelBase::insertEvent(
@@ -126,10 +98,9 @@ void ChannelBase::insertEvent(
     if (previousEvent.sample == sample) {
         return;
     }
-    _soundEvents[_lastEvent] = SoundEvent(
-        cpuTime * 44100 / _clock.getRate(),
-        sample
-    );
+    const int64_t audioTime = cpuTime * 44100 / _clock.getRate();
+    _soundEvents[_lastEvent - 1].endTime = audioTime;
+    _soundEvents[_lastEvent] = SoundEvent(audioTime, sample);
     ++_lastEvent;
 }
 
