@@ -209,8 +209,15 @@ namespace {
         }
         typedef std::chrono::high_resolution_clock Clock;
         typedef std::chrono::milliseconds milliseconds;
-        const int sleepTime = int((gbInstance->getClock().getTimeInSeconds() - gbInstance->getPAPU().getCurrentPlaybackTime()) * 1000);
-        std::this_thread::sleep_for(milliseconds(sleepTime));
+        
+        const float audioLag = gbInstance->getClock().getTimeInSeconds() - gbInstance->getPAPU().getCurrentPlaybackTime();
+        if (audioLag < 0) {
+            return;
+        }
+        if (audioLag > 0.100) {
+            std::this_thread::sleep_for(milliseconds(1));
+        }
+        
     }
 
     void render(void)
@@ -305,7 +312,6 @@ int main(int argc, char* argv[])
     glutKeyboardUpFunc( keyboardUp );
     glutSpecialFunc( specialDown );
     glutSpecialUpFunc( specialUp );
-
     audio.start();
     glutMainLoop();
     audio.stop();

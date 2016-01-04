@@ -11,28 +11,24 @@ namespace gbemu {
     class SoundLengthWavePatternDutyBits
     {
     public:
-        float getWaveDutyPercentage() const
+        int wavePatternDuty() const
         {
-            switch( wavePatternDuty ) {
+            switch( _wavePatternDuty ) {
                 case 0:
-                    return 0.125f;
+                    return 1;
                 case 1:
-                    return 0.25f;
+                    return 2;
                 case 2:
-                    return 0.50f;
+                    return 4;
                 case 3:
-                    return 0.75f;
+                    return 6;
                 default:
-                    JFX_MSG_ASSERT( "Wave pattern duty invalid: " << wavePatternDuty );
+                    JFX_MSG_ASSERT( "Wave pattern duty invalid: " << _wavePatternDuty );
             }
         }
-        float getSoundLength() const
-        {
-            return (64 - soundLength) * (1.f / 256);
-        }
-    private:
         unsigned char soundLength : 6;
-        unsigned char wavePatternDuty : 2;
+    private:
+        unsigned char _wavePatternDuty : 2;
     };
 
     class EnveloppeBits
@@ -93,6 +89,7 @@ namespace gbemu {
         bool contains(unsigned short addr) const;
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
+        void emulate(int nbCycles);
     private:
         short getGbNote() const;
 
@@ -101,6 +98,18 @@ namespace gbemu {
         Register< EnveloppeBits >                              _rEnveloppe;
         Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
+
+        // Length of the period for each of the current frequency's step.
+        // A frequency has 8 cycles of _frequency_period length.
+        int _frequency_period;
+        // Current volume.
+        char _volume;
+        // How far we're into the current period.
+        CyclicCounter _frequency_timer;
+        // Current step in the played frequency.
+        CyclicCounterT<8> _current_duty_step;
+        int _duty;
+        char _last_sample;
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;

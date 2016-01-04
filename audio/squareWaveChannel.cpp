@@ -3,13 +3,6 @@
 #include <base/clock.h>
 #include <base/logger.h>
 
-namespace {
-    float gbNoteToFrequency(const int gbNote)
-    {
-        return 131072.f / (2048 - gbNote);
-    }
-}
-
 namespace gbemu {
 
 SquareWaveChannel::SquareWaveChannel(
@@ -22,6 +15,8 @@ SquareWaveChannel::SquareWaveChannel(
     unsigned short frequencyHiRegisterAddr
 ) :
     ChannelBase(clock, mutex),
+    _frequency_timer(0, 131000),
+    _current_duty_step(0),
     _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
     _soundLengthRegisterAddr(soundLengthRegisterAddr),
     _evenloppeRegisterAddr(evenloppeRegisterAddr),
@@ -52,6 +47,8 @@ void SquareWaveChannel::writeByte(
     }
     else if ( addr == _soundLengthRegisterAddr ) {
         _rLengthDuty.write( value );
+
+        _duty = _rLengthDuty.bits.wavePatternDuty();
         // JFX_LOG("-----NR11-ff11-----");
         // JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.getWaveDutyPercentage());
         // JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.getSoundLength());
@@ -65,6 +62,8 @@ void SquareWaveChannel::writeByte(
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
+
+        _frequency_period = (2048 - getGbNote()) * 4;
         // JFX_LOG("-----NR13-ff13-----");
         // JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
     }
@@ -74,6 +73,44 @@ void SquareWaveChannel::writeByte(
         JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
         JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
         JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
+
+        _frequency_period = (2048 - getGbNote()) * 4;
+
+        if ( _rFrequencyHiPlayback.bits.initialize ) {
+            // FIXME: Enable channel bit.
+            // FIXME: Set the sound length counter.
+            // Reload period counter with frequency period.
+            _frequency_timer = CyclicCounter(_frequency_period - 1, _frequency_period);
+            // Don't reset the step counter!!
+            // FIXME: Volume envelope timer is reloaded with period.
+            // Channel volume is reloaded from NR12.
+            _volume = _rEnveloppe.bits.initialVolume;
+            // FIXME: Noise channel's LFSR bits are all set to 1.
+            // FIXME: Wave channel's position is set to 0 but sample buffer is NOT refilled.
+            // FIXME: Square 1's sweep does several things (see frequency sweep).
+        }
+    }
+}
+
+void SquareWaveChannel::emulate(int nbCycles)
+{
+    // Decrement the period counter by the number of cycles that need to be emulated.
+    // For each underflow, increment by one the step counter.
+    for (int i = 0; i < nbCycles; ++i) {
+        if (_frequency_timer.getCycleLength() == 0) {
+            break;
+        }
+        const bool changed{_frequency_timer.decrement() != 0};
+        if (!changed) {
+            continue;
+        }
+        _frequency_timer = CyclicCounter(_frequency_period - 1, _frequency_period);
+        _current_duty_step.increment();
+        //std::cout << _current_duty_step.count() << " " << _duty << std::endl;
+        insertEvent(
+            _clock.getTimeInCycles() - (nbCycles - i + 1),
+            _current_duty_step < _duty ? -_volume : _volume
+        );
     }
 }
 

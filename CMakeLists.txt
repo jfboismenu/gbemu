@@ -41,8 +41,15 @@ add_library(
 )
 
 add_executable(
+    tests
+    tests/testMain.cpp
+)
+
+add_executable(
     gbemu
     base/audio.cpp glutapp.cpp
 )
+
+target_link_libraries(tests gbemulib ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} portaudio)
 
 target_link_libraries(gbemu gbemulib ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} portaudio)

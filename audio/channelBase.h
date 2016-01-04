@@ -16,9 +16,14 @@ namespace gbemu {
             void* raw_output,
             const unsigned long frameCount,
             const int rate,
-            const float realTime
+            const int64_t cpuClock
         );
+        void updateEventsQueue(int64_t currentTime);
     protected:
+        void insertEvent(
+            int64_t time,
+            char sample
+        );
         ChannelBase(
             const Clock& clock,
             std::mutex& mutex
@@ -26,11 +31,11 @@ namespace gbemu {
 
         const Clock&                                           _clock;
 
-        enum {BUFFER_SIZE = 512};
+        enum {BUFFER_SIZE = 131092};
 
         std::array<SoundEvent, BUFFER_SIZE> _soundEvents;
 
-        using BufferIndex = CyclicCounter<BUFFER_SIZE>;
+        using BufferIndex = CyclicCounterT<BUFFER_SIZE>;
 
         BufferIndex               _firstEvent;
         BufferIndex               _lastEvent;

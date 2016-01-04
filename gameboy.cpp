@@ -41,6 +41,7 @@ namespace gbemu
         if ( nbCycles <= 0 ) {
             return -1;
         }
+        _papu.emulate( nbCycles );
         _video.emulate( nbCycles );
         _timers.emulate( nbCycles );
         handleInterrupts();

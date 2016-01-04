@@ -12,10 +12,12 @@
 #define JFX_INLINE inline
 #define JFX_CMP_ASSERT( a, cmp, b ) \
 { \
-	if ( !( (a) cmp (b) ) ) { \
+    const decltype(a) a_result = a; \
+    const decltype(b) b_result = b; \
+	if ( !( a_result cmp b_result ) ) { \
 		std::cout << #a #cmp #b << " failed!" << std::endl; \
-		std::cout << #a << " : " << a << std::endl; \
-		std::cout << #b << " : " << b << std::endl; \
+		std::cout << #a << " : " << a_result << std::endl; \
+		std::cout << #b << " : " << b_result << std::endl; \
         abort(); \
 	} \
 }

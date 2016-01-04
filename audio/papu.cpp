@@ -26,25 +26,31 @@ PAPU::PAPU( const Clock& clock ) :
     _initializing( true )
 {
 
-    // writeByte(kNR10, 0x80);
-    // writeByte(kNR11, 0xBF);
-    // writeByte(kNR12, 0xF3);
-    // writeByte(kNR14, 0xBF);
-    // writeByte(kNR21, 0x3F);
-    // writeByte(kNR22, 0x00);
-    // writeByte(kNR24, 0xBF);
-    // writeByte(kNR30, 0x7F);
-    // writeByte(kNR31, 0xFF);
-    // writeByte(kNR32, 0x9F);
-    // writeByte(kNR33, 0xBF);
-    // writeByte(kNR41, 0xFF);
-    // writeByte(kNR42, 0x00);
-    // writeByte(kNR43, 0x00);
-    // writeByte(kNR30, 0xBF);
-    // writeByte(kNR50, 0x77);
-    // writeByte(kNR51, 0xF3);
-    // writeByte(kNR52, 0xF1);
+    writeByte(kNR10, 0x80);
+    writeByte(kNR11, 0xBF);
+    writeByte(kNR12, 0xF3);
+    writeByte(kNR14, 0xBF);
+    writeByte(kNR21, 0x3F);
+    writeByte(kNR22, 0x00);
+    writeByte(kNR24, 0xBF);
+    writeByte(kNR30, 0x7F);
+    writeByte(kNR31, 0xFF);
+    writeByte(kNR32, 0x9F);
+    writeByte(kNR33, 0xBF);
+    writeByte(kNR41, 0xFF);
+    writeByte(kNR42, 0x00);
+    writeByte(kNR43, 0x00);
+    writeByte(kNR30, 0xBF);
+    writeByte(kNR50, 0x77);
+    writeByte(kNR51, 0xF3);
+    writeByte(kNR52, 0xF1);
     _initializing = false;
+}
+
+void PAPU::emulate(int nbCycles)
+{
+    _squareWaveChannel1.emulate(nbCycles);
+    _squareWaveChannel2.emulate(nbCycles);
 }
 
 void PAPU::writeByte(
@@ -82,7 +88,7 @@ void PAPU::writeByte(
         // JFX_LOG("Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ));
     }
     else if ( _squareWaveChannel1.contains( addr ) ) {
-        _squareWaveChannel1.writeByte( addr, value );
+        //_squareWaveChannel1.writeByte( addr, value );
     }
     else if ( _squareWaveChannel2.contains( addr ) ) {
         _squareWaveChannel2.writeByte( addr, value );
@@ -134,20 +140,20 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
 void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, const int rate)
 {
     _rate = rate;
-    float realTime(float(_currentPlaybackTime)/_rate);
+    //std::cout << "audio in proc : " << audioTimeInProcTime << std::endl;
 
     // Update sound event queue.
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        // _squareWaveChannel1.updateEventsQueue(realTime);
-        // _squareWaveChannel2.updateEventsQueue(realTime);
+        _squareWaveChannel1.updateEventsQueue(_currentPlaybackTime);
+        _squareWaveChannel2.updateEventsQueue(_currentPlaybackTime);
         // _waveChannel.updateEventsQueue(realTime);
     }
 
     // Render audio to the output buffer.
-    _squareWaveChannel1.renderAudio(output, frameCount, rate, realTime);
-    _squareWaveChannel2.renderAudio(output, frameCount, rate, realTime);
-    _waveChannel.renderAudio(output, frameCount, rate, realTime);
+    _squareWaveChannel1.renderAudio(output, frameCount, rate, _currentPlaybackTime);
+    _squareWaveChannel2.renderAudio(output, frameCount, rate, _currentPlaybackTime);
+    //_waveChannel.renderAudio(output, frameCount, rate);
 
     _currentPlaybackTime += frameCount;
 }

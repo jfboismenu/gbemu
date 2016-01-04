@@ -18,6 +18,7 @@ namespace gbemu {
         unsigned char readByte( unsigned short addr ) const;
         bool contains( unsigned short addr ) const;
         float getCurrentPlaybackTime() const;
+        void emulate(int nbCycles);
     private:
         void renderAudioInternal(void* output, const unsigned long frameCount, const int rate);
 
