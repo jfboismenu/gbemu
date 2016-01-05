@@ -14,7 +14,7 @@ JFX_INLINE ClockT<CycleLength, ClockAt>::ClockT(
 template<int CycleLength, int64_t ClockAt>
 JFX_INLINE bool ClockT<CycleLength, ClockAt>::increment()
 {
-    _count = (_count + 1) % CycleLength;
+    _count = (++_count) % CycleLength;
     return isClocking();
 }
 

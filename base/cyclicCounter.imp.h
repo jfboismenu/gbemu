@@ -7,106 +7,97 @@
 namespace gbemu {
 
 template<typename Derived>
-CyclicBase<Derived>::CyclicBase(const int count) :
+JFX_INLINE CyclicBase<Derived>::CyclicBase(const int count) :
     _count(count)
 {}
 
 template<typename Derived>
-int CyclicBase<Derived>::decrement(int ticks)
+JFX_INLINE bool CyclicBase<Derived>::decrement()
 {
-    int nbTimesUnderflowed = ticks / derivedGetCycleLength();
-    int remainder = ticks % derivedGetCycleLength();
-    _count -= remainder;
-    if ( _count < 0 ) {
-        ++nbTimesUnderflowed;
+    if (--_count < 0) {
         _count += derivedGetCycleLength();
+        return true;
     }
-    return nbTimesUnderflowed;
+    return false;
 }
 
 template<typename Derived>
-int CyclicBase<Derived>::increment(int ticks)
+JFX_INLINE bool CyclicBase<Derived>::increment()
 {
-    int nbTimesOverflowed = ticks / derivedGetCycleLength();
-    int remainder = ticks % derivedGetCycleLength();
-    _count += remainder;
-    if ( _count >= derivedGetCycleLength() ) {
-        ++nbTimesOverflowed;
-        _count %= derivedGetCycleLength();
+    if (++_count == derivedGetCycleLength()) {
+        _count = 0;
+        return true;
     }
-    return nbTimesOverflowed;
+    return false;
 }
 
 template<typename Derived>
-Derived& CyclicBase<Derived>::operator++()
+JFX_INLINE Derived& CyclicBase<Derived>::operator++()
 {
-    _count = (_count + 1) % derivedGetCycleLength();
+    increment();
     return derived();
 }
 
 template<typename Derived>
-Derived CyclicBase<Derived>::operator+(int i) const
+JFX_INLINE Derived CyclicBase<Derived>::operator+(int i) const
 {
     Derived counter(derived());
-    ++counter;
+    counter.increment();
     return counter;
 }
 
 template<typename Derived>
-Derived CyclicBase<Derived>::operator-(int i) const
+JFX_INLINE Derived CyclicBase<Derived>::operator-(int i) const
 {
     Derived counter(derived());
-    --counter._count;
-    if (counter._count < 0) {
-        counter._count += derivedGetCycleLength();
-    }
+    counter.decrement();
     return counter;
 }
 
 template<typename Derived>
-bool CyclicBase<Derived>::operator!=(const Derived& that) const
+JFX_INLINE bool CyclicBase<Derived>::operator!=(const Derived& that) const
 {
     return _count != that._count;
 }
 
 template<typename Derived>
-bool CyclicBase<Derived>::operator==(const Derived& that) const
+JFX_INLINE bool CyclicBase<Derived>::operator==(const Derived& that) const
 {
     return _count == that._count;
 }
 
 template<typename Derived>
-CyclicBase<Derived>::operator int() const
+JFX_INLINE CyclicBase<Derived>::operator int() const
 {
     return count();
 }
 
 template<typename Derived>
-int CyclicBase<Derived>::count() const
+JFX_INLINE int CyclicBase<Derived>::count() const
 {
     return _count;
 }
 
 template<typename Derived>
-void CyclicBase<Derived>::reset()
+JFX_INLINE void CyclicBase<Derived>::reset()
 {
     _count = 0;
 }
 
 template<typename Derived>
-Derived& CyclicBase<Derived>::derived()
+JFX_INLINE Derived& CyclicBase<Derived>::derived()
 {
     return static_cast<Derived&>(*this);
 }
 
 template<typename Derived>
-const Derived& CyclicBase<Derived>::derived() const
+JFX_INLINE const Derived& CyclicBase<Derived>::derived() const
 {
     return static_cast<const Derived&>(*this);
 }
 
 template<typename Derived>
-int CyclicBase<Derived>::derivedGetCycleLength() const
+JFX_INLINE int CyclicBase<Derived>::derivedGetCycleLength() const
 {
     return derived().getCycleLength();
 }
@@ -129,7 +120,7 @@ JFX_INLINE int CyclicCounterT<0>::getCycleLength() const
 // CyclicCounterT<any int but 0>
 
 template<int CycleLength>
-int CyclicCounterT<CycleLength>::getCycleLength() const
+JFX_INLINE int CyclicCounterT<CycleLength>::getCycleLength() const
 {
     return CycleLength;
 }

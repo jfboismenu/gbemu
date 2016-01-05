@@ -9,10 +9,10 @@ public:
     CyclicBase(int count);
     // Decrements the counter by an arbitrary amount. Returns how many times the
     // counter underflowed.
-    int decrement(int ticks = 1);
+    bool decrement();
     // Increments the counter by an arbitrary amount. Returns how many times the
     // counter overflowed.
-    int increment(int ticks = 1);
+    bool increment();
     Derived& operator++();
     Derived operator+(int i) const;
     Derived operator-(int i) const;

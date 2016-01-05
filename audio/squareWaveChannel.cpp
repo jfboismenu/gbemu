@@ -118,13 +118,11 @@ void SquareWaveChannel::emulate(int currentCycle)
         return;
     }
 
-    // Decrement the period counter by the number of cycles that need to be emulated.
-    // For each underflow, increment by one the step counter.
-    const bool changed{_frequency_timer.decrement() != 0};
-    if (!changed) {
+    // If frequency timer didn't underflow, output doesn't change.
+    if (!_frequency_timer.decrement()) {
         return;
     }
-    _frequency_timer = CyclicCounter(_frequency_period - 1, _frequency_period);
+    _frequency_timer = CyclicCounter(_frequency_period, _frequency_period);
     _current_duty_step.increment();
     //std::cout << _current_duty_step.count() << " " << _duty << std::endl;
     insertEvent(
