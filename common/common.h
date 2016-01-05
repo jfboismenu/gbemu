@@ -44,6 +44,16 @@ namespace gbemu {
     JFX_INLINE void noop()
     {
     }
+
+    template<typename T, typename U>
+    void clamp(T& value, U const lowest, U const highest)
+    {
+        if (value < lowest) {
+            value = lowest;
+        } else if (value > highest) {
+            value = highest;
+        }
+    }
     
     JFX_INLINE std::vector< unsigned char > readFile( const std::string& filename )
     {

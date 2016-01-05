@@ -1,4 +1,5 @@
 #include <audio/squareWaveChannel.h>
+#include <audio/papu.h>
 #include <base/cyclicCounter.imp.h>
 #include <base/clock.h>
 #include <base/logger.h>
@@ -6,7 +7,7 @@
 namespace gbemu {
 
 SquareWaveChannel::SquareWaveChannel(
-    const Clock& clock,
+    const PAPUClocks& clocks,
     std::mutex& mutex,
     unsigned short frequencyShiftRegisterAddr,
     unsigned short soundLengthRegisterAddr,
@@ -14,8 +15,9 @@ SquareWaveChannel::SquareWaveChannel(
     unsigned short frequencyLowRegisterAddr,
     unsigned short frequencyHiRegisterAddr
 ) :
-    ChannelBase(clock, mutex),
+    ChannelBase(clocks, mutex),
     _frequency_timer(0, 131000),
+    _volumeTimer(0, 1),
     _current_duty_step(0),
     _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
     _soundLengthRegisterAddr(soundLengthRegisterAddr),
@@ -59,6 +61,9 @@ void SquareWaveChannel::writeByte(
         // JFX_LOG("Initial channel volume       : " << (int)_rEnveloppe.bits.initialVolume);
         // JFX_LOG("Volume sweep direction       : " << ( _rEnveloppe.bits.isAmplifying() ? "up" : "down" ));
         // JFX_LOG("Length of each step          : " << _rEnveloppe.bits.getSweepLength() << " seconds");
+        _volumeTimer = CyclicCounter(0, _rEnveloppe.bits.sweepLength);
+        // Channel volume is reloaded from NR12.
+        _volume = _rEnveloppe.bits.initialVolume;
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
@@ -83,6 +88,7 @@ void SquareWaveChannel::writeByte(
             _frequency_timer = CyclicCounter(_frequency_period - 1, _frequency_period);
             // Don't reset the step counter!!
             // FIXME: Volume envelope timer is reloaded with period.
+            _volumeTimer = CyclicCounter(0, _rEnveloppe.bits.sweepLength);
             // Channel volume is reloaded from NR12.
             _volume = _rEnveloppe.bits.initialVolume;
             // FIXME: Noise channel's LFSR bits are all set to 1.
@@ -92,27 +98,39 @@ void SquareWaveChannel::writeByte(
     }
 }
 
-void SquareWaveChannel::emulate(int nbCycles)
+void SquareWaveChannel::clockEnveloppe()
 {
+    // If enveloppe clock just clocked and we have a enveloppe going on.
+    if (_rEnveloppe.bits.sweepLength != 0) {
+        // Increment the volume timer and if it overflowed...
+        if (_volumeTimer.increment()) {
+            // Update the volume.
+            _volume += _rEnveloppe.bits.getVolumeDelta();
+            // Volume should never go above or under these values.
+            clamp(_volume, 0, 15);
+        }
+    }
+}
+
+void SquareWaveChannel::emulate(int currentCycle)
+{
+    if (_frequency_timer.getCycleLength() == 0) {
+        return;
+    }
+
     // Decrement the period counter by the number of cycles that need to be emulated.
     // For each underflow, increment by one the step counter.
-    for (int i = 0; i < nbCycles; ++i) {
-        const int64_t currentCycle = _clock.getTimeInCycles() - (nbCycles - i + 1);
-        if (_frequency_timer.getCycleLength() == 0) {
-            break;
-        }
-        const bool changed{_frequency_timer.decrement() != 0};
-        if (!changed) {
-            continue;
-        }
-        _frequency_timer = CyclicCounter(_frequency_period - 1, _frequency_period);
-        _current_duty_step.increment();
-        //std::cout << _current_duty_step.count() << " " << _duty << std::endl;
-        insertEvent(
-            currentCycle,
-            _current_duty_step < _duty ? -_volume : _volume
-        );
+    const bool changed{_frequency_timer.decrement() != 0};
+    if (!changed) {
+        return;
     }
+    _frequency_timer = CyclicCounter(_frequency_period - 1, _frequency_period);
+    _current_duty_step.increment();
+    //std::cout << _current_duty_step.count() << " " << _duty << std::endl;
+    insertEvent(
+        currentCycle,
+        _current_duty_step < _duty ? -_volume : _volume
+    );
 }
 
 short SquareWaveChannel::getGbNote() const

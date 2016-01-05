@@ -27,7 +27,7 @@ namespace gbemu
         return _papu;
     }
 
-    const Clock& Gameboy::getClock() const
+    const CPUClock& Gameboy::getClock() const
     {
         return _clock;
     }

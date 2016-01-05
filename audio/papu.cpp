@@ -2,7 +2,7 @@
 #include <cpu/registers.h>
 #include <common/common.h>
 #include <base/logger.h>
-#include <base/clock.h>
+#include <base/clock.imp.h>
 #include <iostream>
 
 namespace gbemu {
@@ -18,10 +18,10 @@ bool PAPU::contains( unsigned short addr ) const
     return kSoundRegistersStart <= addr && addr <= kSoundRegistersEnd;
 }
 
-PAPU::PAPU( const Clock& clock ) : 
-    _clock( clock ),
-    _squareWaveChannel1( clock, _mutex, kNR10, kNR11, kNR12, kNR13, kNR14 ),
-    _squareWaveChannel2( clock, _mutex, 0, kNR21, kNR22, kNR23, kNR24 ),
+PAPU::PAPU( const CPUClock& clock ) : 
+    _clocks( clock ),
+    _squareWaveChannel1( _clocks, _mutex, kNR10, kNR11, kNR12, kNR13, kNR14 ),
+    _squareWaveChannel2( _clocks, _mutex, 0, kNR21, kNR22, kNR23, kNR24 ),
     _waveChannel( clock, _mutex ),
     _initializing( true )
 {
@@ -49,8 +49,23 @@ PAPU::PAPU( const Clock& clock ) :
 
 void PAPU::emulate(int nbCycles)
 {
-    _squareWaveChannel1.emulate(nbCycles);
-    _squareWaveChannel2.emulate(nbCycles);
+    const int64_t endTick = _clocks.cpu.getTimeInCycles();
+    for (int i = endTick - nbCycles; i < endTick; ++i) {
+        if (_clocks.hz512Clock.increment()) {
+            if (_clocks.lengthClock.increment()) {
+                // FIXME: Implement.
+            }
+            if (_clocks.volumeEnveloppeClock.increment()) {
+                _squareWaveChannel1.clockEnveloppe();
+                _squareWaveChannel2.clockEnveloppe();
+            }
+            if (_clocks.sweepClock.increment()) {
+                // FIXME: Implement.
+            }
+        }
+        _squareWaveChannel1.emulate(i);
+        _squareWaveChannel2.emulate(i);
+    }
 }
 
 void PAPU::writeByte(
@@ -157,8 +172,12 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
     if (_nr51.bits.channel1Left || _nr51.bits.channel1Right) {
        _squareWaveChannel1.renderAudio(output, frameCount, rate, _currentPlaybackTime);
     }
-    _squareWaveChannel2.renderAudio(output, frameCount, rate, _currentPlaybackTime);
-    //_waveChannel.renderAudio(output, frameCount, rate);
+    if (_nr51.bits.channel2Left || _nr51.bits.channel2Right) {
+        _squareWaveChannel2.renderAudio(output, frameCount, rate, _currentPlaybackTime);
+    }
+    if (_nr51.bits.channel3Left || _nr51.bits.channel3Right) {
+        //_waveChannel.renderAudio(output, frameCount, rate);
+    }
 
     _currentPlaybackTime += frameCount;
 }

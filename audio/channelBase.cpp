@@ -1,4 +1,5 @@
 #include <audio/channelBase.h>
+#include <audio/papu.h>
 #include <base/cyclicCounter.imp.h>
 #include <base/clock.h>
 #include <common/common.h>
@@ -6,10 +7,10 @@
 namespace gbemu {
 
 ChannelBase::ChannelBase(
-    const Clock& clock,
+    const PAPUClocks& clocks,
     std::mutex& mutex
 ) :
-    _clock( clock ),
+    _clocks( clocks ),
     _mutex( mutex ),
     _firstEvent( 0 ),
     _lastEvent( 0 ),
@@ -98,7 +99,7 @@ void ChannelBase::insertEvent(
     if (previousEvent.sample == sample) {
         return;
     }
-    const int64_t audioTime = cpuTime * 44100 / _clock.getRate();
+    const int64_t audioTime = cpuTime * 44100 / _clocks.cpu.getRate();
     _soundEvents[_lastEvent - 1].endTime = audioTime;
     _soundEvents[_lastEvent] = SoundEvent(audioTime, sample);
     ++_lastEvent;

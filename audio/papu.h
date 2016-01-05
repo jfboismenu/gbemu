@@ -2,18 +2,29 @@
 
 #include <audio/squareWaveChannel.h>
 #include <audio/waveChannel.h>
+#include <base/clock.h>
 #include <common/register.h>
 #include <mutex>
 
 namespace gbemu {
 
-    class Clock;
+    class CPUClock;
+
+    struct PAPUClocks
+    {
+        JFX_INLINE PAPUClocks(const CPUClock& cpuClock): cpu(cpuClock) {}
+        const CPUClock& cpu;
+        ClockT<4194304 / 512, 0> hz512Clock;
+        ClockT<2, 0> lengthClock;
+        ClockT<8, 7> volumeEnveloppeClock;
+        ClockT<4, 3> sweepClock;
+    };
 
     class PAPU
     {
     public:
         static void renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData);
-        PAPU( const Clock& clock );
+        PAPU( const CPUClock& clock );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
         bool contains( unsigned short addr ) const;
@@ -64,6 +75,8 @@ namespace gbemu {
 
         // This mutex needs to be declared before channels since it is passed
         // down to channels.
+
+        PAPUClocks _clocks;
         std::mutex                _mutex;
         SquareWaveChannel  _squareWaveChannel1;
         SquareWaveChannel  _squareWaveChannel2;
@@ -75,7 +88,6 @@ namespace gbemu {
 
         int _rate;
         int64_t _currentPlaybackTime;
-        const Clock& _clock;
-        bool                      _initializing;
+        bool _initializing;
     };
 }

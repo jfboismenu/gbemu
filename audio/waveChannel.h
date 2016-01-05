@@ -7,7 +7,7 @@
 
 namespace gbemu {
 
-    class Clock;
+    class PAPUClocks;
 
     class OnOff
     {
@@ -54,7 +54,7 @@ namespace gbemu {
     {
     public:
         WaveChannel(
-            const Clock& clock,
+            const PAPUClocks& clock,
             std::mutex& mutex
         );
         void writeByte( unsigned short addr, unsigned char value );

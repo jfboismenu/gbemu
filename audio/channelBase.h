@@ -7,7 +7,8 @@
 
 namespace gbemu {
 
-    class Clock;
+    class CPUClock;
+    class PAPUClocks;
 
     class ChannelBase
     {
@@ -25,11 +26,11 @@ namespace gbemu {
             char sample
         );
         ChannelBase(
-            const Clock& clock,
+            const PAPUClocks& clocks,
             std::mutex& mutex
         );
 
-        const Clock&                                           _clock;
+        const PAPUClocks& _clocks;
 
         enum {BUFFER_SIZE = 131092};
 

@@ -6,7 +6,8 @@
 
 namespace gbemu {
 
-    class Clock;
+    class CPUClock;
+    class PAPUClocks;
 
     class SoundLengthWavePatternDutyBits
     {
@@ -34,18 +35,13 @@ namespace gbemu {
     class EnveloppeBits
     {
     public:
-        bool isAmplifying() const
+        char getVolumeDelta() const
         {
-            return _direction == 1;
+            return _direction == 1 ? 1: -1;
         }
 
-        float getSweepLength() const
-        {
-            return _sweepLength / 64.f;
-        }
-
+        unsigned char sweepLength : 3;
     private:
-        unsigned char _sweepLength : 3;
         unsigned char _direction : 1;
     public:
         unsigned char initialVolume : 4;
@@ -78,7 +74,7 @@ namespace gbemu {
     {
     public:
         SquareWaveChannel(
-            const Clock& clock,
+            const PAPUClocks& clock,
             std::mutex& mutex,
             unsigned short frequencyShiftRegisterAddr,
             unsigned short soundLengthRegisterAddr,
@@ -89,7 +85,8 @@ namespace gbemu {
         bool contains(unsigned short addr) const;
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
-        void emulate(int nbCycles);
+        void emulate(int cycle);
+        void clockEnveloppe();
     private:
         short getGbNote() const;
 
@@ -108,6 +105,7 @@ namespace gbemu {
         CyclicCounter _frequency_timer;
         // Current step in the played frequency.
         CyclicCounterT<8> _current_duty_step;
+        CyclicCounter _volumeTimer;
         int _duty;
         char _last_sample;
 
