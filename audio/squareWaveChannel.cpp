@@ -136,33 +136,4 @@ short SquareWaveChannel::getGbNote() const
     return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
 }
 
-/*
-unsigned char SquareWaveChannelState::getVolumeAt(float currentTime) const
-{
-    // Sweep length is zero, so don't amplify or reduce volume.
-    if (sweepLength == 0.f) {
-        return waveVolume;
-    }
-
-    // Compute how many sweeps happened since the beginning of this wave.
-    const int nbSweepsCompleted = (currentTime - waveStartInSeconds) / sweepLength;
-
-    return static_cast<unsigned char>(
-        std::min(
-            // Update the volume in the right direction, but clamp it between 0 and 15 inclusively.
-            std::max(0, isVolumeAmplifying ? waveVolume + nbSweepsCompleted: waveVolume - nbSweepsCompleted),
-            15
-        )
-    );
-}
-
-char SquareWaveChannelState::computeSample(
-    float frameTimeInSeconds
-) const
-{
-    const char sample = (getPositionInsideWaveform(frameTimeInSeconds) < waveDuty) ? 1 : -1;
-    return sample * getVolumeAt(frameTimeInSeconds);
-}
-*/
-
 }
