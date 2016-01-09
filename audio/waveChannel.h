@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audio/channelBase.h>
+#include <audio/frequency.h>
 #include <audio/common.h>
 #include <cpu/registers.h>
 #include <common/register.h>

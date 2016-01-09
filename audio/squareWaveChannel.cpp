@@ -17,12 +17,13 @@ SquareWaveChannel::SquareWaveChannel(
 ) :
     ChannelBase(clocks, mutex),
     Envelope(envelopeRegisterAddr),
-    _frequencyTimer(0, 131000),
+    Frequency(
+        frequencyLowRegisterAddr,
+        frequencyHiRegisterAddr
+    ),
     _currentDutyStep(0),
     _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
-    _soundLengthRegisterAddr(soundLengthRegisterAddr),
-    _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
-    _frequencyHiRegisterAddr(frequencyHiRegisterAddr)
+    _soundLengthRegisterAddr(soundLengthRegisterAddr)
 {}
 
 bool SquareWaveChannel::contains(unsigned short addr) const
@@ -57,27 +58,10 @@ void SquareWaveChannel::writeByte(
     else if ( Envelope::writeByte( addr, value ) ) {
         // Envelope was updated, nothing to do.
     }
-    else if ( addr == _frequencyLowRegisterAddr ) {
-        _rFrequencyLo.write( value );
-
-        _frequencyPeriod = (2048 - getGbNote()) * 4;
-        JFX_LOG("-----NR13-ff13-----");
-        JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
-    }
-    else if ( addr == _frequencyHiRegisterAddr ) {
-        _rFrequencyHiPlayback.write(value);
-        JFX_LOG("-----NR14-" << std::hex << _frequencyHiRegisterAddr << std::dec << "-----");
-        JFX_LOG("Frequency hi : " << (int)_rFrequencyHiPlayback.bits.freqHi);
-        JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
-        JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
-
-        _frequencyPeriod = (2048 - getGbNote()) * 4;
-
+    else if ( Frequency::writeByte( addr, value ) && addr == _frequencyHiRegisterAddr ) {
         if ( _rFrequencyHiPlayback.bits.initialize ) {
             // FIXME: Enable channel bit.
             // FIXME: Set the sound length counter.
-            // Reload period counter with frequency period.
-            _frequencyTimer = CyclicCounter(_frequencyPeriod - 1, _frequencyPeriod);
             // Don't reset the step counter!!
             // FIXME: Volume envelope timer is reloaded with period.
             _volumeTimer = CyclicCounter(0, _rEnvelope.bits.sweepLength);
@@ -92,15 +76,10 @@ void SquareWaveChannel::writeByte(
 
 void SquareWaveChannel::emulate(int currentCycle)
 {
-    if (_frequencyTimer.getCycleLength() == 0) {
+    // If the frequency clock hasn't overflowed
+    if ( !Frequency::emulate(currentCycle) ) {
         return;
     }
-
-    // If frequency timer didn't underflow, output doesn't change.
-    if (!_frequencyTimer.decrement()) {
-        return;
-    }
-    _frequencyTimer = CyclicCounter(_frequencyPeriod, _frequencyPeriod);
     _currentDutyStep.increment();
     //std::cout << _currentDutyStep.count() << " " << _duty << std::endl;
     insertEvent(
@@ -109,9 +88,5 @@ void SquareWaveChannel::emulate(int currentCycle)
     );
 }
 
-short SquareWaveChannel::getGbNote() const
-{
-    return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
-}
 
 }

@@ -3,6 +3,7 @@
 #include <audio/channelBase.h>
 #include <audio/common.h>
 #include <audio/envelope.h>
+#include <audio/frequency.h>
 #include <common/register.h>
 
 namespace gbemu {
@@ -56,7 +57,7 @@ namespace gbemu {
         unsigned char _sweepLength: 4;
     };
 
-    class SquareWaveChannel : public ChannelBase, public Envelope
+    class SquareWaveChannel : public ChannelBase, public Envelope, public Frequency
     {
     public:
         SquareWaveChannel(
@@ -77,21 +78,12 @@ namespace gbemu {
 
         Register< FrequencySweepBits, 0xFF, 0xFF >             _rFrequencySweep;
         Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _rLengthDuty;
-        Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
-        Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
 
-        // Length of the period for each of the current frequency's step.
-        // A frequency has 8 cycles of _frequencyPeriod length.
-        int _frequencyPeriod;
-        // How far we're into the current period.
-        CyclicCounter _frequencyTimer;
         // Current step in the played frequency.
         CyclicCounterT<8> _currentDutyStep;
         int _duty;
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;
-        const unsigned short _frequencyLowRegisterAddr;
-        const unsigned short _frequencyHiRegisterAddr;
     };
 }
