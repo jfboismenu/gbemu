@@ -16,7 +16,7 @@ namespace gbemu {
         const CPUClock& cpu;
         ClockT<4194304 / 512, 0> hz512Clock;
         ClockT<2, 0> lengthClock;
-        ClockT<8, 7> volumeEnveloppeClock;
+        ClockT<8, 7> volumeEnvelopeClock;
         ClockT<4, 3> sweepClock;
     };
 

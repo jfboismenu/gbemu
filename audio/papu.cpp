@@ -55,9 +55,9 @@ void PAPU::emulate(int nbCycles)
             if (_clocks.lengthClock.increment()) {
                 // FIXME: Implement.
             }
-            if (_clocks.volumeEnveloppeClock.increment()) {
-                _squareWaveChannel1.clockEnveloppe();
-                _squareWaveChannel2.clockEnveloppe();
+            if (_clocks.volumeEnvelopeClock.increment()) {
+                _squareWaveChannel1.clockEnvelope();
+                _squareWaveChannel2.clockEnvelope();
             }
             if (_clocks.sweepClock.increment()) {
                 // FIXME: Implement.

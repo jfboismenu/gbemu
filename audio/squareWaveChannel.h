@@ -32,7 +32,7 @@ namespace gbemu {
         unsigned char _wavePatternDuty : 2;
     };
 
-    class EnveloppeBits
+    class EnvelopeBits
     {
     public:
         char getVolumeDelta() const
@@ -78,7 +78,7 @@ namespace gbemu {
             std::mutex& mutex,
             unsigned short frequencyShiftRegisterAddr,
             unsigned short soundLengthRegisterAddr,
-            unsigned short evenloppeRegisterAddr,
+            unsigned short envelopeRegisterAddr,
             unsigned short frequencyLowRegisterAddr,
             unsigned short frequencyHiRegisterAddr
         );
@@ -86,13 +86,13 @@ namespace gbemu {
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
         void emulate(int cycle);
-        void clockEnveloppe();
+        void clockEnvelope();
     private:
         short getGbNote() const;
 
         Register< FrequencySweepBits, 0xFF, 0xFF >             _rFrequencySweep;
         Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _rLengthDuty;
-        Register< EnveloppeBits >                              _rEnveloppe;
+        Register< EnvelopeBits >                              _rEnvelope;
         Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
 
@@ -111,7 +111,7 @@ namespace gbemu {
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;
-        const unsigned short _evenloppeRegisterAddr;
+        const unsigned short _envelopeRegisterAddr;
         const unsigned short _frequencyLowRegisterAddr;
         const unsigned short _frequencyHiRegisterAddr;
     };
