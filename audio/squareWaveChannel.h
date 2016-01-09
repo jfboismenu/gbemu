@@ -2,6 +2,7 @@
 
 #include <audio/channelBase.h>
 #include <audio/common.h>
+#include <audio/envelope.h>
 #include <common/register.h>
 
 namespace gbemu {
@@ -32,21 +33,6 @@ namespace gbemu {
         unsigned char _wavePatternDuty : 2;
     };
 
-    class EnvelopeBits
-    {
-    public:
-        char getVolumeDelta() const
-        {
-            return _direction == 1 ? 1: -1;
-        }
-
-        unsigned char sweepLength : 3;
-    private:
-        unsigned char _direction : 1;
-    public:
-        unsigned char initialVolume : 4;
-    };
-
     class FrequencySweepBits
     {
     public:
@@ -70,7 +56,7 @@ namespace gbemu {
         unsigned char _sweepLength: 4;
     };
 
-    class SquareWaveChannel : public ChannelBase
+    class SquareWaveChannel : public ChannelBase, public Envelope
     {
     public:
         SquareWaveChannel(
@@ -86,32 +72,26 @@ namespace gbemu {
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
         void emulate(int cycle);
-        void clockEnvelope();
     private:
         short getGbNote() const;
 
         Register< FrequencySweepBits, 0xFF, 0xFF >             _rFrequencySweep;
         Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _rLengthDuty;
-        Register< EnvelopeBits >                              _rEnvelope;
         Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
 
         // Length of the period for each of the current frequency's step.
         // A frequency has 8 cycles of _frequency_period length.
         int _frequency_period;
-        // Current volume.
-        char _volume;
         // How far we're into the current period.
         CyclicCounter _frequency_timer;
         // Current step in the played frequency.
         CyclicCounterT<8> _current_duty_step;
-        CyclicCounter _volumeTimer;
         int _duty;
         char _last_sample;
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;
-        const unsigned short _envelopeRegisterAddr;
         const unsigned short _frequencyLowRegisterAddr;
         const unsigned short _frequencyHiRegisterAddr;
     };

@@ -36,7 +36,7 @@ add_library(
     cpu/cpu.cpp cpu/opcode.cpp cpu/timers.cpp cpu/registers.cpp
     video/videoDisplay.cpp
     memory/bootRom.cpp memory/mbc.cpp memory/memory.cpp memory/cartridgeInfo.cpp memory/memoryRegion.cpp
-    audio/common.cpp audio/channelBase.cpp audio/papu.cpp audio/squareWaveChannel.cpp audio/waveChannel.cpp
+    audio/common.cpp audio/channelBase.cpp audio/papu.cpp audio/squareWaveChannel.cpp audio/waveChannel.cpp audio/envelope.cpp
     gameboy.cpp gbemu.cpp
 )
 

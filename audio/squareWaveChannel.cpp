@@ -16,12 +16,11 @@ SquareWaveChannel::SquareWaveChannel(
     unsigned short frequencyHiRegisterAddr
 ) :
     ChannelBase(clocks, mutex),
+    Envelope(envelopeRegisterAddr),
     _frequency_timer(0, 131000),
-    _volumeTimer(0, 1),
     _current_duty_step(0),
     _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
     _soundLengthRegisterAddr(soundLengthRegisterAddr),
-    _envelopeRegisterAddr(envelopeRegisterAddr),
     _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
     _frequencyHiRegisterAddr(frequencyHiRegisterAddr)
 {}
@@ -55,15 +54,8 @@ void SquareWaveChannel::writeByte(
         JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.wavePatternDuty());
         JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.soundLength);
     }
-    else if ( addr == _envelopeRegisterAddr ) {
-        _rEnvelope.write( value );
-        // JFX_LOG("-----NR12-ff12-----");
-        // JFX_LOG("Initial channel volume       : " << (int)_rEnvelope.bits.initialVolume);
-        // JFX_LOG("Volume sweep direction       : " << ( _rEnvelope.bits.isAmplifying() ? "up" : "down" ));
-        // JFX_LOG("Length of each step          : " << _rEnvelope.bits.getSweepLength() << " seconds");
-        _volumeTimer = CyclicCounter(0, _rEnvelope.bits.sweepLength);
-        // Channel volume is reloaded from NR12.
-        _volume = _rEnvelope.bits.initialVolume;
+    else if ( Envelope::writeByte( addr, value ) ) {
+        // Envelope was updated, nothing to do.
     }
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
@@ -94,20 +86,6 @@ void SquareWaveChannel::writeByte(
             // FIXME: Noise channel's LFSR bits are all set to 1.
             // FIXME: Wave channel's position is set to 0 but sample buffer is NOT refilled.
             // FIXME: Square 1's sweep does several things (see frequency sweep).
-        }
-    }
-}
-
-void SquareWaveChannel::clockEnvelope()
-{
-    // If Envelope clock just clocked and we have a Envelope going on.
-    if (_rEnvelope.bits.sweepLength != 0) {
-        // Increment the volume timer and if it overflowed...
-        if (_volumeTimer.increment()) {
-            // Update the volume.
-            _volume += _rEnvelope.bits.getVolumeDelta();
-            // Volume should never go above or under these values.
-            clamp(_volume, 0, 15);
         }
     }
 }

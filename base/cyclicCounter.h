@@ -36,7 +36,7 @@ template<>
 class CyclicCounterT<0> : public CyclicBase<CyclicCounterT<0>>
 {
 public:
-    CyclicCounterT(int count, int length);
+    CyclicCounterT(int count = 0, int length = 1);
     int getCycleLength() const;
 private:
     int _length;
