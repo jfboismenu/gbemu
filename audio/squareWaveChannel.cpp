@@ -17,8 +17,8 @@ SquareWaveChannel::SquareWaveChannel(
 ) :
     ChannelBase(clocks, mutex),
     Envelope(envelopeRegisterAddr),
-    _frequency_timer(0, 131000),
-    _current_duty_step(0),
+    _frequencyTimer(0, 131000),
+    _currentDutyStep(0),
     _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
     _soundLengthRegisterAddr(soundLengthRegisterAddr),
     _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
@@ -60,7 +60,7 @@ void SquareWaveChannel::writeByte(
     else if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
 
-        _frequency_period = (2048 - getGbNote()) * 4;
+        _frequencyPeriod = (2048 - getGbNote()) * 4;
         JFX_LOG("-----NR13-ff13-----");
         JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
     }
@@ -71,13 +71,13 @@ void SquareWaveChannel::writeByte(
         JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
         JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
-        _frequency_period = (2048 - getGbNote()) * 4;
+        _frequencyPeriod = (2048 - getGbNote()) * 4;
 
         if ( _rFrequencyHiPlayback.bits.initialize ) {
             // FIXME: Enable channel bit.
             // FIXME: Set the sound length counter.
             // Reload period counter with frequency period.
-            _frequency_timer = CyclicCounter(_frequency_period - 1, _frequency_period);
+            _frequencyTimer = CyclicCounter(_frequencyPeriod - 1, _frequencyPeriod);
             // Don't reset the step counter!!
             // FIXME: Volume envelope timer is reloaded with period.
             _volumeTimer = CyclicCounter(0, _rEnvelope.bits.sweepLength);
@@ -92,20 +92,20 @@ void SquareWaveChannel::writeByte(
 
 void SquareWaveChannel::emulate(int currentCycle)
 {
-    if (_frequency_timer.getCycleLength() == 0) {
+    if (_frequencyTimer.getCycleLength() == 0) {
         return;
     }
 
     // If frequency timer didn't underflow, output doesn't change.
-    if (!_frequency_timer.decrement()) {
+    if (!_frequencyTimer.decrement()) {
         return;
     }
-    _frequency_timer = CyclicCounter(_frequency_period, _frequency_period);
-    _current_duty_step.increment();
-    //std::cout << _current_duty_step.count() << " " << _duty << std::endl;
+    _frequencyTimer = CyclicCounter(_frequencyPeriod, _frequencyPeriod);
+    _currentDutyStep.increment();
+    //std::cout << _currentDutyStep.count() << " " << _duty << std::endl;
     insertEvent(
         currentCycle,
-        _current_duty_step < _duty ? -_volume : _volume
+        _currentDutyStep < _duty ? -_volume : _volume
     );
 }
 

@@ -81,14 +81,13 @@ namespace gbemu {
         Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
 
         // Length of the period for each of the current frequency's step.
-        // A frequency has 8 cycles of _frequency_period length.
-        int _frequency_period;
+        // A frequency has 8 cycles of _frequencyPeriod length.
+        int _frequencyPeriod;
         // How far we're into the current period.
-        CyclicCounter _frequency_timer;
+        CyclicCounter _frequencyTimer;
         // Current step in the played frequency.
-        CyclicCounterT<8> _current_duty_step;
+        CyclicCounterT<8> _currentDutyStep;
         int _duty;
-        char _last_sample;
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;
