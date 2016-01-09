@@ -18,11 +18,11 @@ bool PAPU::contains( unsigned short addr ) const
     return kSoundRegistersStart <= addr && addr <= kSoundRegistersEnd;
 }
 
-PAPU::PAPU( const CPUClock& clock ) : 
+PAPU::PAPU( const CPUClock& clock ) :
     _clocks( clock ),
     _squareWaveChannel1( _clocks, _mutex, kNR10, kNR11, kNR12, kNR13, kNR14 ),
     _squareWaveChannel2( _clocks, _mutex, 0, kNR21, kNR22, kNR23, kNR24 ),
-    _waveChannel( clock, _mutex ),
+    _waveChannel( _clocks, _mutex ),
     _initializing( true )
 {
 
@@ -50,7 +50,7 @@ PAPU::PAPU( const CPUClock& clock ) :
 void PAPU::emulate(int nbCycles)
 {
     const int64_t endTick = _clocks.cpu.getTimeInCycles();
-    for (int i = endTick - nbCycles; i < endTick; ++i) {
+    for (int64_t i = endTick - nbCycles; i < endTick; ++i) {
         if (_clocks.hz512Clock.increment()) {
             if (_clocks.lengthClock.increment()) {
                 // FIXME: Implement.
@@ -65,6 +65,7 @@ void PAPU::emulate(int nbCycles)
         }
         _squareWaveChannel1.emulate(i);
         _squareWaveChannel2.emulate(i);
+        _waveChannel.emulate(i);
     }
 }
 
@@ -148,7 +149,7 @@ float PAPU::getCurrentPlaybackTime() const
 bool PAPU::isRegisterAvailable( const unsigned short addr ) const
 {
     //  However, if it's off and we are accessing a non wave-pattern address, we can't access them.
-    return _initializing || 
+    return _initializing ||
         addr == kNR52 || // NR52 is always available.
         _nr52.bits._allSoundOn == 1 || // Register is available if sound chip is on.
         // Only wave pattern is accessible when audio register is on.
@@ -165,7 +166,7 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
         std::lock_guard<std::mutex> lock(_mutex);
         _squareWaveChannel1.updateEventsQueue(_currentPlaybackTime);
         _squareWaveChannel2.updateEventsQueue(_currentPlaybackTime);
-        // _waveChannel.updateEventsQueue(realTime);
+        _waveChannel.updateEventsQueue(_currentPlaybackTime);
     }
 
     // Render audio to the output buffer.
@@ -176,7 +177,7 @@ void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, con
         _squareWaveChannel2.renderAudio(output, frameCount, rate, _currentPlaybackTime);
     }
     if (_nr51.bits.channel3Left || _nr51.bits.channel3Right) {
-        //_waveChannel.renderAudio(output, frameCount, rate);
+        _waveChannel.renderAudio(output, frameCount, rate, _currentPlaybackTime);
     }
 
     _currentPlaybackTime += frameCount;

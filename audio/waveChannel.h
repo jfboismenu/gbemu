@@ -36,7 +36,7 @@ namespace gbemu {
     class Volume
     {
     public:
-        char getVolumeShift() const
+        char volumeShift() const
         {
             switch(_volume) {
                 case 0: return 4;
@@ -51,7 +51,7 @@ namespace gbemu {
 
     using WavePatternSamples = std::array< unsigned char, kWavePatternRAMEnd - kWavePatternRAMStart >;
 
-    class WaveChannel : public ChannelBase
+    class WaveChannel : public ChannelBase, public Frequency
     {
     public:
         WaveChannel(
@@ -59,24 +59,14 @@ namespace gbemu {
             std::mutex& mutex
         );
         void writeByte( unsigned short addr, unsigned char value );
-        unsigned char readByte( unsigned short addr ) const;
         bool contains(unsigned short addr) const;
+        void emulate(int64_t currentCycle);
+
     private:
-        char computeSample(
-            float frequency,
-            float timeSinceNoteStart,
-            const WavePatternSamples& samples,
-            const char volumeShift
-        ) const;
-        short getGbNote() const;
-
-
+        // Current step in the played frequency.
+        CyclicCounterT<32> _currentSample;
         Register< OnOff >         _rOnOff;
-        Register< SoundLength >   _rSoundLength;
         Register< Volume >        _rVolume;
-        Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
-        Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
-
         WavePatternSamples _wavePattern;
         unsigned char * const _wavePatternPtr;
     };

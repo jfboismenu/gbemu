@@ -13,8 +13,7 @@ ChannelBase::ChannelBase(
     _clocks( clocks ),
     _mutex( mutex ),
     _firstEvent( 0 ),
-    _lastEvent( 0 ),
-    _playbackLastEvent( 0 )
+    _lastEvent( 0 )
 {}
 
 void ChannelBase::renderAudio(
@@ -86,7 +85,6 @@ void ChannelBase::updateEventsQueue(int64_t currentTime)
         JFX_CMP_ASSERT(_firstEvent, !=, _lastEvent);
         ++_firstEvent;
     }
-    
 }
 
 void ChannelBase::insertEvent(

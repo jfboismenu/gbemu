@@ -72,7 +72,7 @@ namespace gbemu {
         bool contains(unsigned short addr) const;
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
-        void emulate(int cycle);
+        void emulate(int64_t cycle);
     private:
         short getGbNote() const;
 

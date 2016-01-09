@@ -6,10 +6,12 @@ namespace gbemu {
 
 Frequency::Frequency(
     unsigned short frequencyLowRegisterAddr,
-    unsigned short frequencyHiRegisterAddr
+    unsigned short frequencyHiRegisterAddr,
+    int            periodMultiplier
 ) : _frequencyLowRegisterAddr(frequencyLowRegisterAddr),
     _frequencyHiRegisterAddr(frequencyHiRegisterAddr),
-    _frequencyTimer(0, 131000)
+    _frequencyTimer(0, 131000),
+    _periodMultiplier( periodMultiplier )
 {}
 
 bool Frequency::writeByte(
@@ -20,7 +22,7 @@ bool Frequency::writeByte(
     if ( addr == _frequencyLowRegisterAddr ) {
         _rFrequencyLo.write( value );
 
-        _frequencyPeriod = (2048 - getGbNote()) * 4;
+        _frequencyPeriod = computeFrequencyPeriod();
         JFX_LOG("-----NR13-ff13-----");
         JFX_LOG("Frequency lo: " << (int)_rFrequencyLo.bits.freqLo);
         return true;
@@ -32,7 +34,7 @@ bool Frequency::writeByte(
         JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
         JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
 
-        _frequencyPeriod = (2048 - getGbNote()) * 4;
+        _frequencyPeriod = computeFrequencyPeriod();
 
         if ( _rFrequencyHiPlayback.bits.initialize ) {
             // Reload period counter with frequency period.
@@ -44,9 +46,8 @@ bool Frequency::writeByte(
 }
 
 
-bool Frequency::emulate(int currentCycle)
+bool Frequency::emulate()
 {
-
     if (_frequencyTimer.getCycleLength() == 0) {
         return false;
     }
@@ -59,9 +60,11 @@ bool Frequency::emulate(int currentCycle)
     return true;
 }
 
-short Frequency::getGbNote() const
+short Frequency::computeFrequencyPeriod() const
 {
-    return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
+    return (
+        2048 - (_rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 ))
+    ) * _periodMultiplier;
 }
 
 }

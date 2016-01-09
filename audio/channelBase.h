@@ -40,7 +40,6 @@ namespace gbemu {
 
         BufferIndex               _firstEvent;
         BufferIndex               _lastEvent;
-        BufferIndex               _playbackLastEvent;
         std::mutex&               _mutex;
     };
 }

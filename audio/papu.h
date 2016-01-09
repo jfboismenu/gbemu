@@ -73,9 +73,8 @@ namespace gbemu {
 
         bool isRegisterAvailable( const unsigned short addr ) const;
 
-        // This mutex needs to be declared before channels since it is passed
-        // down to channels.
-
+        // These mutex and clocks needs to be declared before channels since 
+        // they are passed down to channels.
         PAPUClocks _clocks;
         std::mutex                _mutex;
         SquareWaveChannel  _squareWaveChannel1;

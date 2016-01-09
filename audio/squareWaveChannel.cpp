@@ -19,7 +19,8 @@ SquareWaveChannel::SquareWaveChannel(
     Envelope(envelopeRegisterAddr),
     Frequency(
         frequencyLowRegisterAddr,
-        frequencyHiRegisterAddr
+        frequencyHiRegisterAddr,
+        4
     ),
     _currentDutyStep(0),
     _frequencySweepRegisterAddr(frequencyShiftRegisterAddr),
@@ -74,10 +75,10 @@ void SquareWaveChannel::writeByte(
     }
 }
 
-void SquareWaveChannel::emulate(int currentCycle)
+void SquareWaveChannel::emulate(int64_t currentCycle)
 {
     // If the frequency clock hasn't overflowed
-    if ( !Frequency::emulate(currentCycle) ) {
+    if ( !Frequency::emulate() ) {
         return;
     }
     _currentDutyStep.increment();
