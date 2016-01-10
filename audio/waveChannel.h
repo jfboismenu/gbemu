@@ -12,14 +12,10 @@ namespace gbemu {
 
     class OnOff
     {
-    public:
-        bool isOn() const
-        {
-            return _onOff == 1;
-        }
     private:
         unsigned char _unused : 7;
-        unsigned char _onOff : 1;
+    public:
+        unsigned char isOn : 1;
     };
 
     class SoundLength

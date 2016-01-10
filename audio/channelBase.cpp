@@ -18,7 +18,7 @@ ChannelBase::ChannelBase(
 
 void ChannelBase::renderAudio(
     void* raw_output,
-    const unsigned long frameCount,
+    const unsigned long sampleCount,
     const int rate,
     const int64_t audioStartInFrames
 )
@@ -48,7 +48,7 @@ void ChannelBase::renderAudio(
         BufferIndex currentEvent = _firstEvent;
         int64_t currentFrame = audioStartInFrames;
         //std::cout << (int)_soundEvents[_firstEvent].sample << std::endl;
-        for (int i = 0; i < frameCount; ++i, ++currentFrame) {
+        for (int i = 0; i < sampleCount; ++i, ++currentFrame) {
             // Sync up to the next valid sample.
             // This the end of this sound is before the current frame.
             while (
@@ -87,6 +87,11 @@ void ChannelBase::updateEventsQueue(int64_t currentTime)
     }
 }
 
+void ChannelBase::setMix(SoundMix mix)
+{
+    _currentMix = mix;
+}
+
 void ChannelBase::insertEvent(
     int64_t cpuTime,
     char sample
@@ -99,7 +104,7 @@ void ChannelBase::insertEvent(
     }
     const int64_t audioTime = cpuTime * 44100 / _clocks.cpu.getRate();
     _soundEvents[_lastEvent - 1].endTime = audioTime;
-    _soundEvents[_lastEvent] = SoundEvent(audioTime, sample);
+    _soundEvents[_lastEvent] = SoundEvent(audioTime, sample, _currentMix);
     ++_lastEvent;
 }
 

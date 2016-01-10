@@ -15,11 +15,12 @@ namespace gbemu {
     public:
         void renderAudio(
             void* raw_output,
-            const unsigned long frameCount,
+            const unsigned long sampleCount,
             const int rate,
             const int64_t cpuClock
         );
         void updateEventsQueue(int64_t currentTime);
+        void setMix(SoundMix mix);
     protected:
         void insertEvent(
             int64_t time,
@@ -41,5 +42,7 @@ namespace gbemu {
         BufferIndex               _firstEvent;
         BufferIndex               _lastEvent;
         std::mutex&               _mutex;
+    private:
+        SoundMix                  _currentMix;
     };
 }

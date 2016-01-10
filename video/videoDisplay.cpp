@@ -297,7 +297,7 @@ namespace gbemu {
                     }
                 }
                 else {
-                    JFX_MSG_ASSERT( "Corrupted STAT mode." );
+                    JFX_MSG_ABORT( "Corrupted STAT mode." );
                 }
             }
             // we are in vblank-mode, so do something about it
@@ -387,7 +387,7 @@ namespace gbemu {
         else if (isVideoRAM(addr)) {
             // Can't write to this region of memory during mode 3
             if (getBit(_lcdc, 7) && (_stat & 0x03) == 0x03) {
-                //JFX_MSG_ASSERT( "Trying to write at RAM when not allowed to" );
+                //JFX_MSG_ABORT( "Trying to write at RAM when not allowed to" );
                 _videoRam[addr - 0x8000] = value;
             }
             else {
@@ -395,7 +395,7 @@ namespace gbemu {
             }
         }
         else {
-            JFX_MSG_ASSERT("Unknown video memory address: " << addr);
+            JFX_MSG_ABORT("Unknown video memory address: " << addr);
         }
     }
 
@@ -443,7 +443,7 @@ namespace gbemu {
             return _videoRam[addr - 0x8000];
         }
         else {
-            JFX_MSG_ASSERT( "Unknown video memory address: " << addr);
+            JFX_MSG_ABORT( "Unknown video memory address: " << addr);
         }
     }
 }

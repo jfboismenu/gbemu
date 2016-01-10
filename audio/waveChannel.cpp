@@ -73,18 +73,21 @@ void WaveChannel::emulate(int64_t currentCycle)
     const int nibble = _currentSample.count() % 2;
 
     char sample;
-    if (nibble == 0) {
-        sample = (_wavePattern[position] >> 4) - 8;
+    if (_rOnOff.bits.isOn) {
+        if (nibble == 0) {
+            sample = (_wavePattern[position] >> 4) - 8;
+        } else {
+            sample = (_wavePattern[position] & 0xF) - 8;
+        }
+        sample >>= _rVolume.bits.volumeShift();
     } else {
-        sample = (_wavePattern[position] & 0xF) - 8;
+        sample = 0;
     }
 
-    /*insertEvent(
+    insertEvent(
         currentCycle,
-        sample >> _rVolume.bits.volumeShift()
-    );*/
-
-    _clocks.cpu.getRate();
+        sample
+    );
 }
 
 }

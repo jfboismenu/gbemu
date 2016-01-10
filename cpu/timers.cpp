@@ -34,7 +34,7 @@ namespace gbemu {
             return _tma;
         }
         else {
-            JFX_MSG_ASSERT( "Unknown memory address: " << addr );
+            JFX_MSG_ABORT( "Unknown memory address: " << addr );
         }
     }
 
@@ -53,7 +53,7 @@ namespace gbemu {
             _tma = value;
         }
         else {
-            JFX_MSG_ASSERT( "Unknown memory address: " << addr );
+            JFX_MSG_ABORT( "Unknown memory address: " << addr );
         }
     }
 

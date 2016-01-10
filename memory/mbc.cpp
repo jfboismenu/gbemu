@@ -119,7 +119,7 @@ namespace {
                 }
             }
             else {
-                JFX_MSG_ASSERT( "Write at " << addr << " not supported for MBC1" );
+                JFX_MSG_ABORT( "Write at " << addr << " not supported for MBC1" );
             }
         }
 
@@ -156,7 +156,7 @@ namespace {
                 }
             }
             else {
-                JFX_MSG_ASSERT( "Reading at " << addr << " for MBC1 not supported." );
+                JFX_MSG_ABORT( "Reading at " << addr << " for MBC1 not supported." );
             }
         }
 
@@ -209,7 +209,7 @@ namespace {
                 writeRAMByte( addr - 0xa000, value );
             }
             else {
-                JFX_MSG_ASSERT( "Write at " << addr << " not supported for MBC2" );
+                JFX_MSG_ABORT( "Write at " << addr << " not supported for MBC2" );
             }
         }
 
@@ -233,7 +233,7 @@ namespace {
                 return readRAMByte( addr - 0xa000 );
             }
             else {
-                JFX_MSG_ASSERT( "Reading at " << addr << " for MBC2 not supported." );
+                JFX_MSG_ABORT( "Reading at " << addr << " for MBC2 not supported." );
             }
         }
 
@@ -266,7 +266,7 @@ namespace {
         {
             // FIXME: Had to deactivate this. Maybe it should only
             // be a warning?
-            //JFX_MSG_ASSERT( "Not supposed to write to None MBC" );
+            //JFX_MSG_ABORT( "Not supposed to write to None MBC" );
         }
         virtual unsigned char readByte(
             unsigned short addr
@@ -326,10 +326,10 @@ namespace gbemu {
             case Cartridge::kBandaiTAMA5:
             case Cartridge::kHudsonHuC1:
             case Cartridge::kHudsonHuC3:
-                JFX_MSG_ASSERT( "Other memory block controllers not implemented." )
+                JFX_MSG_ABORT( "Other memory block controllers not implemented." )
                 return nullptr;
             default:
-                JFX_MSG_ASSERT("Unknown memory block controller" << std::hex << std::endl)
+                JFX_MSG_ABORT("Unknown memory block controller" << std::hex << std::endl)
         }
     }
 }

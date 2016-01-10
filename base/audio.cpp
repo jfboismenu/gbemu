@@ -21,7 +21,7 @@ namespace gbemu {
         err = Pa_OpenDefaultStream(
             &_stream,
             0,          // no input channels
-            1,          // mono output
+            1,          // stereo output
             paInt8,     // 8 bit integer output
             rate,       // sample rate
             0,        // number of frames asked each iteration.

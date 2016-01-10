@@ -4,6 +4,7 @@
 #include <audio/waveChannel.h>
 #include <base/clock.h>
 #include <common/register.h>
+#include <common/common.h>
 #include <mutex>
 
 namespace gbemu {
@@ -61,6 +62,34 @@ namespace gbemu {
         class SoundOutputTerminalSelect
         {
         public:
+            SoundMix getMix(int channel) const
+            {
+                switch (channel) {
+                    case 1:
+                        return getMix(channel1Right, channel1Left);
+                    case 2:
+                        return getMix(channel2Right, channel2Left);
+                    case 3:
+                        return getMix(channel3Right, channel3Left);
+                    case 4:
+                        return getMix(channel4Right, channel4Left);
+                    default:
+                        JFX_MSG_ABORT("Unknown channel idx: " << channel);
+                }
+            }
+        private:
+            SoundMix getMix(unsigned char r, unsigned char l) const
+            {
+                if (r && l) {
+                    return SoundMix::both;
+                } else if (r && !l) {
+                    return SoundMix::right;
+                } else if (!r && l) {
+                    return SoundMix::left;
+                } else {
+                    return SoundMix::silent;
+                }
+            }
             unsigned char channel1Right : 1;
             unsigned char channel2Right : 1;
             unsigned char channel3Right : 1;
@@ -75,8 +104,8 @@ namespace gbemu {
 
         // These mutex and clocks needs to be declared before channels since 
         // they are passed down to channels.
-        PAPUClocks _clocks;
-        std::mutex                _mutex;
+        PAPUClocks         _clocks;
+        std::mutex         _mutex;
         SquareWaveChannel  _squareWaveChannel1;
         SquareWaveChannel  _squareWaveChannel2;
         WaveChannel        _waveChannel;

@@ -26,7 +26,7 @@ namespace gbemu {
                 case 3:
                     return 6;
                 default:
-                    JFX_MSG_ASSERT( "Wave pattern duty invalid: " << _wavePatternDuty );
+                    JFX_MSG_ABORT( "Wave pattern duty invalid: " << _wavePatternDuty );
             }
         }
         unsigned char soundLength : 6;

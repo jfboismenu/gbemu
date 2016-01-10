@@ -22,7 +22,7 @@
 	} \
 }
 
-#define JFX_MSG_ASSERT( msg ) \
+#define JFX_MSG_ABORT( msg ) \
 { \
     std::cout << msg << std::endl; \
     abort(); \
@@ -30,13 +30,13 @@
 
 #define JFX_COND_ASSERT( cond, msg ) \
 if ( !( cond ) ) { \
-   JFX_MSG_ASSERT( #cond " failed: " << msg ); \
+   JFX_MSG_ABORT( #cond " failed: " << msg ); \
 }
 
 #define JFX_ASSERT( cond )                \
 {                                         \
     if (!(cond)) {                        \
-        JFX_MSG_ASSERT(#cond " failed."); \
+        JFX_MSG_ABORT(#cond " failed."); \
     }                                     \
 }
 

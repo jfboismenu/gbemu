@@ -93,15 +93,10 @@ void PAPU::writeByte(
     }
     else if ( addr == kNR51 ) {
         _nr51.write( value );
-        JFX_LOG("-----NR51-ff25-----");
-        JFX_LOG("Channel 1 to right : " << ( _nr51.bits.channel1Right == 1 ));
-        JFX_LOG("Channel 2 to right : " << ( _nr51.bits.channel2Right == 1 ));
-        JFX_LOG("Channel 3 to right : " << ( _nr51.bits.channel3Right == 1 ));
-        JFX_LOG("Channel 4 to right : " << ( _nr51.bits.channel4Right == 1 ));
-        JFX_LOG("Channel 1 to left  : " << ( _nr51.bits.channel1Left == 1 ));
-        JFX_LOG("Channel 2 to left  : " << ( _nr51.bits.channel2Left == 1 ));
-        JFX_LOG("Channel 3 to left  : " << ( _nr51.bits.channel3Left ==  1 ));
-        JFX_LOG("Channel 4 to left  : " << ( _nr51.bits.channel4Left == 1 ));
+        _squareWaveChannel1.setMix(_nr51.bits.getMix(1));
+        _squareWaveChannel2.setMix(_nr51.bits.getMix(2));
+        _waveChannel.setMix(_nr51.bits.getMix(3));
+        //_noiseChannel.setMix(_nr51.bits.getMix(4));
     }
     else if ( _squareWaveChannel1.contains( addr ) ) {
         _squareWaveChannel1.writeByte( addr, value );
@@ -156,31 +151,24 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
         (kWavePatternRAMStart <= addr && addr < kWavePatternRAMEnd);
 }
 
-void PAPU::renderAudioInternal(void* output, const unsigned long frameCount, const int rate)
+void PAPU::renderAudioInternal(void* output, unsigned long frameCount, const int rate)
 {
     _rate = rate;
+    const unsigned long sampleCount{frameCount};
     //std::cout << "audio in proc : " << audioTimeInProcTime << std::endl;
 
     // Update sound event queue.
-    {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _squareWaveChannel1.updateEventsQueue(_currentPlaybackTime);
-        _squareWaveChannel2.updateEventsQueue(_currentPlaybackTime);
-        _waveChannel.updateEventsQueue(_currentPlaybackTime);
-    }
+    _squareWaveChannel1.updateEventsQueue(_currentPlaybackTime);
+    _squareWaveChannel2.updateEventsQueue(_currentPlaybackTime);
+    _waveChannel.updateEventsQueue(_currentPlaybackTime);
 
     // Render audio to the output buffer.
-    if (_nr51.bits.channel1Left || _nr51.bits.channel1Right) {
-       _squareWaveChannel1.renderAudio(output, frameCount, rate, _currentPlaybackTime);
-    }
-    if (_nr51.bits.channel2Left || _nr51.bits.channel2Right) {
-        _squareWaveChannel2.renderAudio(output, frameCount, rate, _currentPlaybackTime);
-    }
-    if (_nr51.bits.channel3Left || _nr51.bits.channel3Right) {
-        _waveChannel.renderAudio(output, frameCount, rate, _currentPlaybackTime);
-    }
+    _squareWaveChannel1.renderAudio(output, sampleCount, rate, _currentPlaybackTime);
+    _squareWaveChannel2.renderAudio(output, sampleCount, rate, _currentPlaybackTime);
+    _waveChannel.renderAudio(output, sampleCount, rate, _currentPlaybackTime);
 
-    _currentPlaybackTime += frameCount;
+    // There are two frames per sample, so divide it by two.
+    _currentPlaybackTime += sampleCount;
 }
 
 }
