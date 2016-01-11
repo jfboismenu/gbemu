@@ -18,25 +18,16 @@ namespace gbemu {
         int64_t _time;
     };
 
-    template<int CycleLength, int64_t ClockAt>
+    template<int CycleLength, int ClockAt>
     class ClockT
     {
     public:
         enum {kLength = CycleLength, kClockAt = ClockAt};
-        ClockT(int64_t count = 0);
+        ClockT(int count = 0);
+        int count() const;
+        void reset();
         bool increment();
     private:
-        int64_t _count;
-    };
-
-    class Clock
-    {
-    public:
-        Clock(int64_t count = 0, int64_t cycleLength = 1);
-        bool increment();
-        int64_t getCycleLength() const;
-    private:
-        int64_t _count;
-        int64_t _cycleLength;
+        int _count;
     };
 }

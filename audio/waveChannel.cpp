@@ -2,7 +2,7 @@
 #include <audio/papu.h>
 #include <cpu/registers.h>
 #include <base/cyclicCounter.imp.h>
-#include <base/clock.h>
+#include <base/clock.imp.h>
 #include <base/logger.h>
 
 namespace {

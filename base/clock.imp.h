@@ -5,17 +5,29 @@
 
 namespace gbemu {
 
-template<int CycleLength, int64_t ClockAt>
+template<int CycleLength, int ClockAt>
 JFX_INLINE ClockT<CycleLength, ClockAt>::ClockT(
-    int64_t const count
+    int const count
 ) : _count(count)
 {}
 
-template<int CycleLength, int64_t ClockAt>
+template<int CycleLength, int ClockAt>
 JFX_INLINE bool ClockT<CycleLength, ClockAt>::increment()
 {
     _count = (++_count) % CycleLength;
     return _count == ClockAt;
+}
+
+template<int CycleLength, int ClockAt>
+int ClockT<CycleLength, ClockAt>::count() const
+{
+    return _count;
+}
+
+template<int CycleLength, int ClockAt>
+void ClockT<CycleLength, ClockAt>::reset()
+{
+    _count = 0;
 }
 
 }

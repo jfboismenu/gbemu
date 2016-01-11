@@ -1,6 +1,6 @@
 #pragma once
 
-#include <base/cyclicCounter.h>
+#include <base/counter.h>
 #include <common/register.h>
 
 namespace gbemu {
@@ -45,7 +45,7 @@ namespace gbemu {
         // A frequency has 8 cycles of _frequencyPeriod length.
         int _frequencyPeriod;
         // How far we're into the current period.
-        CyclicCounter _frequencyTimer;
+        Counter _frequencyTimer;
 
         const unsigned short _frequencyLowRegisterAddr;
         const unsigned short _frequencyHiRegisterAddr;

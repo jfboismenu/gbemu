@@ -1,6 +1,6 @@
 #pragma once
 
-#include <base/clock.h>
+#include <base/counter.h>
 #include <common/register.h>
 
 namespace gbemu {
@@ -33,6 +33,6 @@ namespace gbemu {
 
         Register< EnvelopeBits >        _rEnvelope;
         const unsigned short _envelopeRegisterAddr;
-        Clock _volumeTimer;
+        Counter _volumeTimer;
     };
 }

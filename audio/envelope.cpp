@@ -30,7 +30,7 @@ bool Envelope::writeByte( unsigned short addr, unsigned char value )
         // JFX_LOG("Initial channel volume       : " << (int)_rEnvelope.bits.initialVolume);
         // JFX_LOG("Volume sweep direction       : " << ( _rEnvelope.bits.isAmplifying() ? "up" : "down" ));
         // JFX_LOG("Length of each step          : " << _rEnvelope.bits.getSweepLength() << " seconds");
-        _volumeTimer = Clock(0, _rEnvelope.bits.sweepLength);
+        _volumeTimer = Counter(0, _rEnvelope.bits.sweepLength);
         // Channel volume is reloaded from NR12.
         _volume = _rEnvelope.bits.initialVolume;
         return true;

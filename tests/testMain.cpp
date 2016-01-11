@@ -4,37 +4,6 @@
 
 using namespace gbemu;
 
-template<typename Derived>
-void testCyclicCounterInternal(CyclicBase<Derived>& counter)
-{
-    /*JFX_CMP_ASSERT(counter.count(), ==, 0);
-    JFX_CMP_ASSERT(counter.decrement(), ==, 1);
-    JFX_CMP_ASSERT(counter.count(), ==, 9);
-    JFX_CMP_ASSERT(counter.decrement(10), ==, 1);
-    JFX_CMP_ASSERT(counter.count(), ==, 9);
-    JFX_CMP_ASSERT(counter.decrement(19), ==, 1);
-    JFX_CMP_ASSERT(counter.count(), ==, 0);
-    JFX_CMP_ASSERT(counter.decrement(11), ==, 2);
-    JFX_CMP_ASSERT(counter.count(), ==, 9);
-
-    JFX_CMP_ASSERT(counter.increment(11), ==, 2);
-    JFX_CMP_ASSERT(counter.count(), ==, 0);
-    JFX_CMP_ASSERT(counter.increment(19), ==, 1);
-    JFX_CMP_ASSERT(counter.count(), ==, 9);
-    JFX_CMP_ASSERT(counter.increment(10), ==, 1);
-    JFX_CMP_ASSERT(counter.count(), ==, 9);
-    JFX_CMP_ASSERT(counter.increment(), ==, 1);
-    JFX_CMP_ASSERT(counter.count(), ==, 0);*/
-}
-
-void testCyclicCounter()
-{
-    CyclicCounterT<10> counter(0);
-    testCyclicCounterInternal(counter);
-    CyclicCounter counter2(0, 10);
-    testCyclicCounterInternal(counter2);
-}
-
 void testClockT()
 {
     ClockT<2, 0> c2(0);
@@ -82,7 +51,6 @@ void testClockT()
 
 int main(const int argc, char const * const* const argv)
 {
-    testCyclicCounter();
     testClockT();
 
     return 0;

@@ -1,5 +1,4 @@
 #include <audio/frequency.h>
-#include <base/cyclicCounter.imp.h>
 #include <base/logger.h>
 
 namespace gbemu {
@@ -38,7 +37,7 @@ bool Frequency::writeByte(
 
         if ( _rFrequencyHiPlayback.bits.initialize ) {
             // Reload period counter with frequency period.
-            _frequencyTimer = CyclicCounter(_frequencyPeriod - 1, _frequencyPeriod);
+            _frequencyTimer = Counter(0, _frequencyPeriod);
         }
         return true;
     }
@@ -53,10 +52,10 @@ bool Frequency::emulate()
     }
 
     // If frequency timer didn't underflow, output doesn't change.
-    if (!_frequencyTimer.decrement()) {
+    if (!_frequencyTimer.increment()) {
         return false;
     }
-    _frequencyTimer = CyclicCounter(_frequencyPeriod, _frequencyPeriod);
+    _frequencyTimer = Counter(0, _frequencyPeriod);
     return true;
 }
 

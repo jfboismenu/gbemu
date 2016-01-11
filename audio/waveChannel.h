@@ -5,6 +5,7 @@
 #include <audio/common.h>
 #include <cpu/registers.h>
 #include <common/register.h>
+#include <base/clock.h>
 
 namespace gbemu {
 
@@ -60,7 +61,7 @@ namespace gbemu {
 
     private:
         // Current step in the played frequency.
-        CyclicCounterT<32> _currentSample;
+        ClockT<32, 0> _currentSample;
         Register< OnOff >         _rOnOff;
         Register< Volume >        _rVolume;
         WavePatternSamples _wavePattern;

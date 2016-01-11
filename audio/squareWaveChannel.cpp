@@ -65,7 +65,7 @@ void SquareWaveChannel::writeByte(
             // FIXME: Set the sound length counter.
             // Don't reset the step counter!!
             // FIXME: Volume envelope timer is reloaded with period.
-            _volumeTimer = Clock(0, _rEnvelope.bits.sweepLength);
+            _volumeTimer = Counter(0, _rEnvelope.bits.sweepLength);
             // Channel volume is reloaded from NR12.
             _volume = _rEnvelope.bits.initialVolume;
             // FIXME: Noise channel's LFSR bits are all set to 1.
