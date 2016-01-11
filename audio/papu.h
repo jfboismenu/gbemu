@@ -24,7 +24,7 @@ namespace gbemu {
     class PAPU
     {
     public:
-        static void renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData);
+        static void renderAudio(void* output, const unsigned long sampleCount, const int rate, void* userData);
         PAPU( const CPUClock& clock );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
@@ -32,7 +32,7 @@ namespace gbemu {
         float getCurrentPlaybackTime() const;
         void emulate(int nbCycles);
     private:
-        void renderAudioInternal(void* output, const unsigned long frameCount, const int rate);
+        void renderAudioInternal(void* output, const unsigned long sampleCount, const int rate);
 
         class NR52bits
         {

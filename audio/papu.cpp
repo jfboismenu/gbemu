@@ -7,10 +7,10 @@
 
 namespace gbemu {
 
-void PAPU::renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData)
+void PAPU::renderAudio(void* output, const unsigned long sampleCount, const int rate, void* userData)
 {
-    memset(output, 0, frameCount);
-    reinterpret_cast<PAPU*>(userData)->renderAudioInternal(output, frameCount, rate);
+    memset(output, 0, sampleCount * 2);
+    reinterpret_cast<PAPU*>(userData)->renderAudioInternal(output, sampleCount, rate);
 }
 
 bool PAPU::contains( unsigned short addr ) const
@@ -151,10 +151,9 @@ bool PAPU::isRegisterAvailable( const unsigned short addr ) const
         (kWavePatternRAMStart <= addr && addr < kWavePatternRAMEnd);
 }
 
-void PAPU::renderAudioInternal(void* output, unsigned long frameCount, const int rate)
+void PAPU::renderAudioInternal(void* output, unsigned long sampleCount, const int rate)
 {
     _rate = rate;
-    const unsigned long sampleCount{frameCount};
     //std::cout << "audio in proc : " << audioTimeInProcTime << std::endl;
 
     // Update sound event queue.

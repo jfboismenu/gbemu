@@ -9,9 +9,9 @@ namespace {
         } else if (mix == SoundMix::left) {
             return sample;
         } else if (mix == SoundMix::right) {
-            return sample;
+            return sample << 8;
         } else {
-            return sample;
+            return sample << 8 | sample;
         }
     }
 

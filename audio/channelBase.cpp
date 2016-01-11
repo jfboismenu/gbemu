@@ -25,7 +25,7 @@ void ChannelBase::renderAudio(
 {
     // bool dumped = false;
     // if (!dumped) {
-    //     std::cout << "Audio range : [" << audioStartInFrames << ", " << audioStartInFrames + frameCount << "]" << std::endl;
+    //     std::cout << "Audio range : [" << audioStartInFrames << ", " << audioStartInFrames + sampleCount << "]" << std::endl;
     //     std::cout << "Index range : [" << _firstEvent << ", " << _lastEvent << "]" << std::endl;
     //     std::cout << "Sample range : [" << _soundEvents[_firstEvent].time << ", " << _soundEvents[_lastEvent - 1].time << "]" << std::endl;
     //     dumped = true;
@@ -35,7 +35,7 @@ void ChannelBase::renderAudio(
     }*/
 
     // FIXME: Why do I have to do this???
-    char* output = reinterpret_cast<char*>(raw_output);
+    short* output = reinterpret_cast<short*>(raw_output);
 
     if (_firstEvent == _lastEvent) {
         //std::cout << "Nothing to play!!!" << std::endl;
@@ -48,7 +48,7 @@ void ChannelBase::renderAudio(
         BufferIndex currentEvent = _firstEvent;
         int64_t currentFrame = audioStartInFrames;
         //std::cout << (int)_soundEvents[_firstEvent].sample << std::endl;
-        for (int i = 0; i < sampleCount; ++i, ++currentFrame) {
+        for (int i = 0; i < sampleCount; i++, ++currentFrame) {
             // Sync up to the next valid sample.
             // This the end of this sound is before the current frame.
             while (

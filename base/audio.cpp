@@ -21,7 +21,7 @@ namespace gbemu {
         err = Pa_OpenDefaultStream(
             &_stream,
             0,          // no input channels
-            1,          // stereo output
+            2,          // stereo output
             paInt8,     // 8 bit integer output
             rate,       // sample rate
             0,        // number of frames asked each iteration.
@@ -54,7 +54,7 @@ namespace gbemu {
     int Audio::callback(
         const void * input,
         void *raw_output,
-        const unsigned long frameCount,
+        const unsigned long sampleCount,
         const PaStreamCallbackTimeInfo *timeInfo,
         const PaStreamCallbackFlags statusFlags,
         void *userData
@@ -63,7 +63,7 @@ namespace gbemu {
         Audio& audio(*reinterpret_cast<Audio*>(userData));
         (audio._userCallback)(
             raw_output,
-            frameCount,
+            sampleCount,
             audio._rate,
             audio._userData
         );
