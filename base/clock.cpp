@@ -27,4 +27,21 @@ namespace gbemu {
         return _rate;
     }
 
+    Clock::Clock(
+        int64_t count,
+        int64_t cycleLength
+    ) : _count(count), _cycleLength(cycleLength)
+    {}
+
+    bool Clock::increment()
+    {
+        _count = (++_count) % _cycleLength;
+        return _count == 0;
+    }
+
+    int64_t Clock::getCycleLength() const
+    {
+        return _cycleLength;
+    }
+
 }

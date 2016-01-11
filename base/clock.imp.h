@@ -15,12 +15,6 @@ template<int CycleLength, int64_t ClockAt>
 JFX_INLINE bool ClockT<CycleLength, ClockAt>::increment()
 {
     _count = (++_count) % CycleLength;
-    return isClocking();
-}
-
-template<int CycleLength, int64_t ClockAt>
-JFX_INLINE bool ClockT<CycleLength, ClockAt>::isClocking() const
-{
     return _count == ClockAt;
 }
 
