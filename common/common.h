@@ -12,15 +12,17 @@
 #define JFX_INLINE inline
 #define JFX_CMP_ASSERT( a, cmp, b ) \
 { \
-	if ( !( (a) cmp (b) ) ) { \
+    const decltype(a) a_result = a; \
+    const decltype(b) b_result = b; \
+	if ( !( a_result cmp b_result ) ) { \
 		std::cout << #a #cmp #b << " failed!" << std::endl; \
-		std::cout << #a << " : " << a << std::endl; \
-		std::cout << #b << " : " << b << std::endl; \
+		std::cout << #a << " : " << a_result << std::endl; \
+		std::cout << #b << " : " << b_result << std::endl; \
         abort(); \
 	} \
 }
 
-#define JFX_MSG_ASSERT( msg ) \
+#define JFX_MSG_ABORT( msg ) \
 { \
     std::cout << msg << std::endl; \
     abort(); \
@@ -28,19 +30,29 @@
 
 #define JFX_COND_ASSERT( cond, msg ) \
 if ( !( cond ) ) { \
-   JFX_MSG_ASSERT( #cond " failed: " << msg ); \
+   JFX_MSG_ABORT( #cond " failed: " << msg ); \
 }
 
 #define JFX_ASSERT( cond )                \
 {                                         \
     if (!(cond)) {                        \
-        JFX_MSG_ASSERT(#cond " failed."); \
+        JFX_MSG_ABORT(#cond " failed."); \
     }                                     \
 }
 
 namespace gbemu {
     JFX_INLINE void noop()
     {
+    }
+
+    template<typename T, typename U>
+    void clamp(T& value, U const lowest, U const highest)
+    {
+        if (value < lowest) {
+            value = lowest;
+        } else if (value > highest) {
+            value = highest;
+        }
     }
     
     JFX_INLINE std::vector< unsigned char > readFile( const std::string& filename )

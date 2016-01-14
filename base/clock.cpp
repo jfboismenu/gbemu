@@ -1,30 +1,29 @@
-#include <base/clock.h>
+#include <base/clock.imp.h>
 
 namespace gbemu {
 
 
-    Clock::Clock(int64_t rate) : _rate(rate), _time(0)
+    CPUClock::CPUClock(int64_t rate) : _rate(rate), _time(0)
     {}
 
-    Clock& Clock::operator+=(int cycles)
+    CPUClock& CPUClock::operator+=(int cycles)
     {
         _time += cycles;
         return *this;
     }
 
-    int64_t Clock::getTimeInCycles() const
+    int64_t CPUClock::getTimeInCycles() const
     {
         return _time;
     }
 
-    float Clock::getTimeInSeconds() const
+    float CPUClock::getTimeInSeconds() const
     {
         return float(_time) / getRate();
     }
 
-    int Clock::getRate() const
+    int CPUClock::getRate() const
     {
         return _rate;
     }
-
 }

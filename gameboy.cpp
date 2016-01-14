@@ -27,7 +27,7 @@ namespace gbemu
         return _papu;
     }
 
-    const Clock& Gameboy::getClock() const
+    const CPUClock& Gameboy::getClock() const
     {
         return _clock;
     }
@@ -41,6 +41,7 @@ namespace gbemu
         if ( nbCycles <= 0 ) {
             return -1;
         }
+        _papu.emulate( nbCycles );
         _video.emulate( nbCycles );
         _timers.emulate( nbCycles );
         handleInterrupts();

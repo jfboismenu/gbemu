@@ -1259,7 +1259,7 @@ namespace gbemu {
             case kDisabledNextCycle:
                 return true;
             default:
-                JFX_MSG_ASSERT( "Wrong interrupt state : " << _interruptState );
+                JFX_MSG_ABORT( "Wrong interrupt state : " << _interruptState );
                 return false;
         };
     }

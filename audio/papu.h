@@ -2,24 +2,37 @@
 
 #include <audio/squareWaveChannel.h>
 #include <audio/waveChannel.h>
+#include <base/clock.h>
 #include <common/register.h>
+#include <common/common.h>
 #include <mutex>
 
 namespace gbemu {
 
-    class Clock;
+    class CPUClock;
+
+    struct PAPUClocks
+    {
+        JFX_INLINE PAPUClocks(const CPUClock& cpuClock): cpu(cpuClock) {}
+        const CPUClock& cpu;
+        ClockT<4194304 / 512, 0> hz512Clock;
+        ClockT<2, 0> lengthClock;
+        ClockT<8, 7> volumeEnvelopeClock;
+        ClockT<4, 3> sweepClock;
+    };
 
     class PAPU
     {
     public:
-        static void renderAudio(void* output, const unsigned long frameCount, const int rate, void* userData);
-        PAPU( const Clock& clock );
+        static void renderAudio(void* output, const unsigned long sampleCount, const int rate, void* userData);
+        PAPU( const CPUClock& clock );
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
         bool contains( unsigned short addr ) const;
         float getCurrentPlaybackTime() const;
+        void emulate(int nbCycles);
     private:
-        void renderAudioInternal(void* output, const unsigned long frameCount, const int rate);
+        void renderAudioInternal(void* output, const unsigned long sampleCount, const int rate);
 
         class NR52bits
         {
@@ -49,6 +62,34 @@ namespace gbemu {
         class SoundOutputTerminalSelect
         {
         public:
+            SoundMix getMix(int channel) const
+            {
+                switch (channel) {
+                    case 1:
+                        return getMix(channel1Right, channel1Left);
+                    case 2:
+                        return getMix(channel2Right, channel2Left);
+                    case 3:
+                        return getMix(channel3Right, channel3Left);
+                    case 4:
+                        return getMix(channel4Right, channel4Left);
+                    default:
+                        JFX_MSG_ABORT("Unknown channel idx: " << channel);
+                }
+            }
+        private:
+            SoundMix getMix(unsigned char r, unsigned char l) const
+            {
+                if (r && l) {
+                    return SoundMix::both;
+                } else if (r && !l) {
+                    return SoundMix::right;
+                } else if (!r && l) {
+                    return SoundMix::left;
+                } else {
+                    return SoundMix::silent;
+                }
+            }
             unsigned char channel1Right : 1;
             unsigned char channel2Right : 1;
             unsigned char channel3Right : 1;
@@ -61,9 +102,10 @@ namespace gbemu {
 
         bool isRegisterAvailable( const unsigned short addr ) const;
 
-        // This mutex needs to be declared before channels since it is passed
-        // down to channels.
-        std::mutex                _mutex;
+        // These mutex and clocks needs to be declared before channels since 
+        // they are passed down to channels.
+        PAPUClocks         _clocks;
+        std::mutex         _mutex;
         SquareWaveChannel  _squareWaveChannel1;
         SquareWaveChannel  _squareWaveChannel2;
         WaveChannel        _waveChannel;
@@ -74,7 +116,6 @@ namespace gbemu {
 
         int _rate;
         int64_t _currentPlaybackTime;
-        const Clock& _clock;
-        bool                      _initializing;
+        bool _initializing;
     };
 }

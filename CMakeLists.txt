@@ -31,18 +31,25 @@ link_directories(/usr/local/lib)
 
 add_library(
     gbemulib
-    base/logger.cpp base/clock.cpp base/cyclicCounter.cpp
+    base/logger.cpp base/clock.cpp base/counter.cpp
     common/register.cpp common/common.cpp
     cpu/cpu.cpp cpu/opcode.cpp cpu/timers.cpp cpu/registers.cpp
     video/videoDisplay.cpp
     memory/bootRom.cpp memory/mbc.cpp memory/memory.cpp memory/cartridgeInfo.cpp memory/memoryRegion.cpp
-    audio/common.cpp audio/channelBase.cpp audio/papu.cpp audio/squareWaveChannel.cpp audio/waveChannel.cpp
+    audio/common.cpp audio/channelBase.cpp audio/papu.cpp audio/squareWaveChannel.cpp audio/waveChannel.cpp audio/envelope.cpp audio/frequency.cpp
     gameboy.cpp gbemu.cpp
+)
+
+add_executable(
+    tests
+    tests/testMain.cpp
 )
 
 add_executable(
     gbemu
     base/audio.cpp glutapp.cpp
 )
+
+target_link_libraries(tests gbemulib ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} portaudio)
 
 target_link_libraries(gbemu gbemulib ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} portaudio)

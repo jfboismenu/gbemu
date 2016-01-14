@@ -1,7 +1,8 @@
 #include <audio/waveChannel.h>
+#include <audio/papu.h>
 #include <cpu/registers.h>
 #include <base/cyclicCounter.imp.h>
-#include <base/clock.h>
+#include <base/clock.imp.h>
 #include <base/logger.h>
 
 namespace {
@@ -15,10 +16,12 @@ namespace {
 namespace gbemu {
 
 WaveChannel::WaveChannel(
-    const Clock& clock,
+    const PAPUClocks& clocks,
     std::mutex& mutex
 ) :
-    ChannelBase(clock, mutex),
+    ChannelBase(clocks, mutex),
+    Frequency(kNR33, kNR34, 2),
+    _currentSample(0),
     _wavePatternPtr(&_wavePattern[ 0 ] - kWavePatternRAMStart)
 {}
 
@@ -38,11 +41,6 @@ bool WaveChannel::contains(unsigned short addr) const
     }
 }
 
-short WaveChannel::getGbNote() const
-{
-    return _rFrequencyLo.bits.freqLo | ( _rFrequencyHiPlayback.bits.freqHi << 8 );
-}
-
 void WaveChannel::writeByte(
     const unsigned short addr,
     const unsigned char value
@@ -50,24 +48,46 @@ void WaveChannel::writeByte(
 {
     if ( addr == kNR30 ) {
         _rOnOff.write(value);
-    } else if ( addr == kNR31 ) {
-        _rSoundLength.write(value);
     } else if ( addr == kNR32 ) {
         _rVolume.write(value);
-    } else if ( addr == kNR33 ) {
-        _rFrequencyLo.write(value);
     } else if ( addr >= kWavePatternRAMStart && addr < kWavePatternRAMEnd ) {
         _wavePatternPtr[ addr ] = value;
-    } else if ( addr == kNR34 ) {
-        _rFrequencyHiPlayback.write( value );
-        // JFX_LOG("-----NR34-ff1e-----");
-        // JFX_LOG("On/Off : " << (_rOnOff.bits.isOn() ? "On": "Off"));
-        // JFX_LOG("Sound length : " << _rSoundLength.bits.getSoundLength() << " seconds");
-        // JFX_LOG("Volume shift : " << (int)_rVolume.bits.getVolumeShift());
-        // JFX_LOG("Frequency    : " << frequency);
-        // JFX_LOG("Consecutive  : " << ( _rFrequencyHiPlayback.bits.isLooping() ? "loop" : "play until NR11-length expires" ));
-        // JFX_LOG("Initialize?  : " << ( _rFrequencyHiPlayback.bits.initialize == 1 ));
+    } else if ( Frequency::writeByte( addr, value ) ) {
+        if ( addr == kNR34 && _rFrequencyHiPlayback.bits.initialize ) {
+            _currentSample.reset();
+        }
     }
+}
+
+void WaveChannel::emulate(int64_t currentCycle)
+{
+    // If the frequency clock hasn't overflowed
+    if ( !Frequency::emulate() ) {
+        return;
+    }
+
+
+    _currentSample.increment();
+
+    const int position = _currentSample.count() / 2;
+    const int nibble = _currentSample.count() % 2;
+
+    char sample;
+    if (_rOnOff.bits.isOn) {
+        if (nibble == 0) {
+            sample = (_wavePattern[position] >> 4) - 8;
+        } else {
+            sample = (_wavePattern[position] & 0xF) - 8;
+        }
+        sample >>= _rVolume.bits.volumeShift();
+    } else {
+        sample = 0;
+    }
+
+    insertEvent(
+        currentCycle,
+        sample
+    );
 }
 
 }

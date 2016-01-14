@@ -7,34 +7,42 @@
 
 namespace gbemu {
 
-    class Clock;
+    class CPUClock;
+    class PAPUClocks;
 
     class ChannelBase
     {
     public:
         void renderAudio(
             void* raw_output,
-            const unsigned long frameCount,
+            const unsigned long sampleCount,
             const int rate,
-            const float realTime
+            const int64_t cpuClock
         );
+        void updateEventsQueue(int64_t currentTime);
+        void setMix(SoundMix mix);
     protected:
+        void insertEvent(
+            int64_t time,
+            char sample
+        );
         ChannelBase(
-            const Clock& clock,
+            const PAPUClocks& clocks,
             std::mutex& mutex
         );
 
-        const Clock&                                           _clock;
+        const PAPUClocks& _clocks;
 
-        enum {BUFFER_SIZE = 512};
+        enum {BUFFER_SIZE = 131092};
 
         std::array<SoundEvent, BUFFER_SIZE> _soundEvents;
 
-        using BufferIndex = CyclicCounter<BUFFER_SIZE>;
+        using BufferIndex = CyclicCounterT<BUFFER_SIZE>;
 
         BufferIndex               _firstEvent;
         BufferIndex               _lastEvent;
-        BufferIndex               _playbackLastEvent;
         std::mutex&               _mutex;
+    private:
+        SoundMix                  _currentMix;
     };
 }

@@ -7,7 +7,7 @@ namespace gbemu {
     class Audio
     {
     public:
-        using AudioCallback = void(void* output, const unsigned long frameCount, const int rate, void* userData);
+        using AudioCallback = void(void* output, const unsigned long sampleCount, const int rate, void* userData);
 
         Audio(
             const int samples_per_second,
@@ -24,7 +24,7 @@ namespace gbemu {
         static int callback(
             const void * input,
             void *raw_output,
-            const unsigned long frameCount,
+            const unsigned long sampleCount,
             const PaStreamCallbackTimeInfo *timeInfo,
             const PaStreamCallbackFlags statusFlags,
             void *userData

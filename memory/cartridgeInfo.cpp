@@ -41,7 +41,7 @@ namespace gbemu {
                 }
             }
         }
-        JFX_MSG_ASSERT( "Unknown RAM size." );
+        JFX_MSG_ABORT( "Unknown RAM size." );
         return std::vector< unsigned char >();
     }
 

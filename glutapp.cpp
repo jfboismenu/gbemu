@@ -185,11 +185,11 @@ namespace {
 
     void calcFPS()
     {
-        typedef std::chrono::high_resolution_clock Clock;
+        typedef std::chrono::high_resolution_clock CPUClock;
         typedef std::chrono::milliseconds milliseconds;
 
-        Clock::time_point now = Clock::now();
-        static Clock::time_point lastSecond = now;
+        CPUClock::time_point now = CPUClock::now();
+        static CPUClock::time_point lastSecond = now;
         static int nbFramesSinceLastSecond = 0;
         ++nbFramesSinceLastSecond;
 
@@ -203,18 +203,23 @@ namespace {
 
     void syncCpuWithAudio()
     {
-        // If we are perforrming slower than audio at the moment, do not sleep!
-        if (gbInstance->getClock().getTimeInSeconds() < gbInstance->getPAPU().getCurrentPlaybackTime()) {
-            return;
-        }
-        typedef std::chrono::high_resolution_clock Clock;
+        typedef std::chrono::high_resolution_clock CPUClock;
         typedef std::chrono::milliseconds milliseconds;
-        const int sleepTime = int((gbInstance->getClock().getTimeInSeconds() - gbInstance->getPAPU().getCurrentPlaybackTime()) * 1000);
-        std::this_thread::sleep_for(milliseconds(sleepTime));
+
+        const float audioLag = gbInstance->getClock().getTimeInSeconds() - gbInstance->getPAPU().getCurrentPlaybackTime();
+
+        if (audioLag > 0.100) {
+            //std::cout << "Audio lag: " << audioLag << std::endl;
+            std::this_thread::sleep_for(milliseconds(int(audioLag * 1000 / 4)));
+        }
     }
 
     void render(void)
     {
+        // If we are perforrming slower than audio at the moment, do not sleep!
+        if (gbInstance->getClock().getTimeInSeconds() < gbInstance->getPAPU().getCurrentPlaybackTime()) {
+            return;
+        }
         calcFPS();
         const Color* pixels = gbInstance->getVideo().getPixels();
 
@@ -305,7 +310,6 @@ int main(int argc, char* argv[])
     glutKeyboardUpFunc( keyboardUp );
     glutSpecialFunc( specialDown );
     glutSpecialUpFunc( specialUp );
-
     audio.start();
     glutMainLoop();
     audio.stop();

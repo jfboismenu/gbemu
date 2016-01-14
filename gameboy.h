@@ -22,14 +22,14 @@ namespace gbemu {
         PAPU& getPAPU();
         Cartridge& getCartridge();
         VideoDisplay& getVideo();
-        const Clock& getClock() const;
+        const CPUClock& getClock() const;
         int doCycle();
 
     private:
 
         void handleInterrupts();
 
-        Clock _clock;
+        CPUClock _clock;
         BootRom _bootRom;
         PAPU   _papu;
         Memory _memory;

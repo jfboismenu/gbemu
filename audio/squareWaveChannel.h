@@ -2,57 +2,36 @@
 
 #include <audio/channelBase.h>
 #include <audio/common.h>
+#include <audio/envelope.h>
+#include <audio/frequency.h>
 #include <common/register.h>
 
 namespace gbemu {
 
-    class Clock;
+    class CPUClock;
+    class PAPUClocks;
 
     class SoundLengthWavePatternDutyBits
     {
     public:
-        float getWaveDutyPercentage() const
+        int wavePatternDuty() const
         {
-            switch( wavePatternDuty ) {
+            switch( _wavePatternDuty ) {
                 case 0:
-                    return 0.125f;
+                    return 1;
                 case 1:
-                    return 0.25f;
+                    return 2;
                 case 2:
-                    return 0.50f;
+                    return 4;
                 case 3:
-                    return 0.75f;
+                    return 6;
                 default:
-                    JFX_MSG_ASSERT( "Wave pattern duty invalid: " << wavePatternDuty );
+                    JFX_MSG_ABORT( "Wave pattern duty invalid: " << _wavePatternDuty );
             }
         }
-        float getSoundLength() const
-        {
-            return (64 - soundLength) * (1.f / 256);
-        }
-    private:
         unsigned char soundLength : 6;
-        unsigned char wavePatternDuty : 2;
-    };
-
-    class EnveloppeBits
-    {
-    public:
-        bool isAmplifying() const
-        {
-            return _direction == 1;
-        }
-
-        float getSweepLength() const
-        {
-            return _sweepLength / 64.f;
-        }
-
     private:
-        unsigned char _sweepLength : 3;
-        unsigned char _direction : 1;
-    public:
-        unsigned char initialVolume : 4;
+        unsigned char _wavePatternDuty : 2;
     };
 
     class FrequencySweepBits
@@ -78,34 +57,33 @@ namespace gbemu {
         unsigned char _sweepLength: 4;
     };
 
-    class SquareWaveChannel : public ChannelBase
+    class SquareWaveChannel : public ChannelBase, public Envelope, public Frequency
     {
     public:
         SquareWaveChannel(
-            const Clock& clock,
+            const PAPUClocks& clock,
             std::mutex& mutex,
             unsigned short frequencyShiftRegisterAddr,
             unsigned short soundLengthRegisterAddr,
-            unsigned short evenloppeRegisterAddr,
+            unsigned short envelopeRegisterAddr,
             unsigned short frequencyLowRegisterAddr,
             unsigned short frequencyHiRegisterAddr
         );
         bool contains(unsigned short addr) const;
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
+        void emulate(int64_t cycle);
     private:
         short getGbNote() const;
 
         Register< FrequencySweepBits, 0xFF, 0xFF >             _rFrequencySweep;
         Register< SoundLengthWavePatternDutyBits, 0xB0, 0xFF > _rLengthDuty;
-        Register< EnveloppeBits >                              _rEnveloppe;
-        Register< FrequencyLoBits, 0x0, 0xFF >                 _rFrequencyLo;
-        Register< FrequencyHiBits, 0x40, 0XFF >                _rFrequencyHiPlayback;
+
+        // Current step in the played frequency.
+        CyclicCounterT<8> _currentDutyStep;
+        int _duty;
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;
-        const unsigned short _evenloppeRegisterAddr;
-        const unsigned short _frequencyLowRegisterAddr;
-        const unsigned short _frequencyHiRegisterAddr;
     };
 }
