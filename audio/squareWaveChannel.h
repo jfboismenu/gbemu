@@ -29,8 +29,12 @@ namespace gbemu {
                     JFX_MSG_ABORT( "Wave pattern duty invalid: " << _wavePatternDuty );
             }
         }
-        unsigned char soundLength : 6;
+        int soundLength() const
+        {
+            return 64 - _soundLength;
+        }
     private:
+        unsigned char _soundLength : 6;
         unsigned char _wavePatternDuty : 2;
     };
 
@@ -73,6 +77,7 @@ namespace gbemu {
         void writeByte( unsigned short addr, unsigned char value );
         unsigned char readByte( unsigned short addr ) const;
         void emulate(int64_t cycle);
+        void clockLengthCounter();
     private:
         short getGbNote() const;
 
@@ -82,6 +87,7 @@ namespace gbemu {
         // Current step in the played frequency.
         CyclicCounterT<8> _currentDutyStep;
         int _duty;
+        int _lengthCounter;
 
         const unsigned short _frequencySweepRegisterAddr;
         const unsigned short _soundLengthRegisterAddr;

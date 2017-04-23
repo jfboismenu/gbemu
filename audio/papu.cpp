@@ -53,7 +53,10 @@ void PAPU::emulate(int nbCycles)
     for (int64_t i = endTick - nbCycles; i < endTick; ++i) {
         if (_clocks.hz512Clock.increment()) {
             if (_clocks.lengthClock.increment()) {
-                // FIXME: Implement.
+                _squareWaveChannel1.clockLengthCounter();
+                _squareWaveChannel2.clockLengthCounter();
+                // FIXME: Clock length counter.
+                //_waveChannel.clockLengthCounter();
             }
             if (_clocks.volumeEnvelopeClock.increment()) {
                 _squareWaveChannel1.clockEnvelope();

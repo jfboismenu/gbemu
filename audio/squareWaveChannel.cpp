@@ -54,7 +54,7 @@ void SquareWaveChannel::writeByte(
         _duty = _rLengthDuty.bits.wavePatternDuty();
         JFX_LOG("-----NR11-ff11-----");
         JFX_LOG("Wave pattern duty            : " << _rLengthDuty.bits.wavePatternDuty());
-        JFX_LOG("Length counter load register : " << (int)_rLengthDuty.bits.soundLength);
+        JFX_LOG("Length counter load register : " << _rLengthDuty.bits.soundLength());
     }
     else if ( Envelope::writeByte( addr, value ) ) {
         // Envelope was updated, nothing to do.
@@ -63,6 +63,8 @@ void SquareWaveChannel::writeByte(
         if ( _rFrequencyHiPlayback.bits.initialize ) {
             // FIXME: Enable channel bit.
             // FIXME: Set the sound length counter.
+            _lengthCounter = _rLengthDuty.bits.soundLength();
+            std::cout << "Load: " << _lengthCounter << std::endl;
             // Don't reset the step counter!!
             // FIXME: Volume envelope timer is reloaded with period.
             _volumeTimer = Counter(0, _rEnvelope.bits.sweepLength);
@@ -82,11 +84,31 @@ void SquareWaveChannel::emulate(int64_t currentCycle)
         return;
     }
     _currentDutyStep.increment();
-    //std::cout << _currentDutyStep.count() << " " << _duty << std::endl;
-    insertEvent(
-        currentCycle,
-        _currentDutyStep < _duty ? -_volume : _volume
-    );
+
+    char volume;
+    // If the length counter has expired and we are not looping.
+    if ( _lengthCounter == 0 && !_rFrequencyHiPlayback.bits.isLooping() ) {
+        volume = 0;
+    }
+    else if ( _currentDutyStep < _duty ) {
+        volume = -_volume;
+    }
+    else {
+        volume = _volume;
+    }
+    insertEvent(currentCycle, volume);
+}
+
+void SquareWaveChannel::clockLengthCounter()
+{
+    if (_rFrequencyHiPlayback.bits.isLooping()) {
+        return;
+    }
+    if (--_lengthCounter < 0) {
+        _lengthCounter = 0;
+    }
+
+    // FIXME: Set the realtime status bit for the length counter in the appropriate register.
 }
 
 
